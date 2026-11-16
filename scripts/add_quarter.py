@@ -3,11 +3,11 @@
 
     python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json
     python3 scripts/add_quarter.py --quarter "2026 Q4" --m2 23.70 --rrp 0.01 --gdp 33.40 --cpi 3.6 \
-        --rate 4.0 --debt 40.60 --equity 74.10 --crypto 2.55 --gold 4300 --gold-t 223500 --stable 0.29
+        --rate 4.0 --debt 40.60 --equity 74.10 --crypto 2.55 --gold 4300 --gold-t 223500 --stable 0.29 --bills 7.30 --rwa 0.0042
     python3 scripts/add_quarter.py --quarter "2026 Q3" --crypto 2.97        # revise one value
 
-A new quarter must be the one right after the latest quarter, and needs all eleven inputs
-(ten on the Model sheet, plus stablecoin supply on the Flow sheet).
+A new quarter must be the one right after the latest quarter, and needs all thirteen inputs
+(ten on the Model sheet; stablecoin supply, Treasury bills and tokenised RWAs on the Flow sheet).
 For an existing quarter, only the values given are changed.
 
 The JSON form is what fetch_inputs.py writes:
@@ -58,7 +58,7 @@ if unknown:
 for k, v in values.items():
     if not isinstance(v, (int, float)) or isinstance(v, bool):
         sys.exit(f"{k}: {v!r} is not a number")
-    if k in ("m2", "gdp", "equity", "crypto", "gold", "gold_t", "stable") and v <= 0:
+    if k in ("m2", "gdp", "equity", "crypto", "gold", "gold_t", "stable", "bills") and v <= 0:
         sys.exit(f"{k}: must be above zero")
 
 book = openpyxl.load_workbook(args.workbook)
@@ -88,7 +88,7 @@ if quarter in labels:
 elif quarter == lib.next_quarter(latest):
     missing = [k for k in lib.ALL_INPUTS if k not in values]
     if missing:
-        sys.exit(f"{quarter} is a new quarter and needs all eleven inputs. Missing: {', '.join(missing)}")
+        sys.exit(f"{quarter} is a new quarter and needs all thirteen inputs. Missing: {', '.join(missing)}")
     print(f"Adding {quarter} after {latest} (new row {scen}; scenario moves to row {scen + 1})")
 
     M.insert_rows(scen)                                   # values and styles move down; references do not
@@ -109,7 +109,7 @@ elif quarter == lib.next_quarter(latest):
         if isinstance(above.value, str) and above.value.startswith("="):
             cell.value = lib.shift_own_row(above.value, last, new)
         if isinstance(old.value, str) and old.value.startswith("="):
-            old.value = lib.shift_own_row(old.value, scen, moved)     # incl. the scenario's locked-USD default
+            old.value = lib.shift_own_row(old.value, scen, moved)     # incl. the scenario's defaults for base, bills and RWAs
     for rng in list(F.merged_cells.ranges):
         if rng.min_row >= scen:
             F.unmerge_cells(str(rng))

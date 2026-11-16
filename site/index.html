@@ -9,8 +9,8 @@
 <body>
 <main class="wrap">
   <section class="hero">
-    <h1>How much crypto market cap can the stablecoin base carry?</h1>
-    <p class="lede">A small, open model of what stands behind the crypto market. Stablecoins are its general equivalent, used to price and settle tokens, RWAs and ABS. Short-term US Treasuries hold their peg, so the base is locked bonds first and locked dollars second, and the market puts a multiple on it. With an Excel workbook, a scenario app, and the tools to keep both current.</p>
+    <h1>What stands behind crypto market cap?</h1>
+    <p class="lede">A small, open model of one measurable base under the crypto market: stablecoins. They are a general equivalent, not the only one. Fiat buys crypto directly, and stablecoins also pay for things outside crypto. But they are the part that can be counted, and short-term US Treasuries hold their peg, so the model reads the base as locked bonds first and locked dollars second, then asks what multiple the market puts on it. With an Excel workbook, a scenario app, and the tools to keep both current.</p>
     <p><a class="btn primary" href="forecast.html">Open the forecast app</a> <a class="btn" href="downloads/crypto_model_v2.xlsx" download>Download the workbook</a></p>
   </section>
 
@@ -38,7 +38,7 @@
   <h2>Keeping it current</h2>
   <div class="panel">
     <ol class="steps">
-      <li><b>Fetch.</b> <code>python3 scripts/fetch_inputs.py "2026 Q4"</code> pulls M2, GDP, CPI, the policy rate, reverse repo, public debt and stablecoin supply, and writes a file with three values left to fill in by hand.</li>
+      <li><b>Fetch.</b> <code>python3 scripts/fetch_inputs.py "2026 Q4"</code> pulls M2, GDP, CPI, the policy rate, reverse repo, public debt, Treasury bills, stablecoin supply and tokenised RWAs, and writes a file with three values left to fill in by hand.</li>
       <li><b>Apply.</b> <code>python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json</code> adds the quarter to the workbook and checks it against an independent recomputation.</li>
       <li><b>Publish.</b> <code>make update</code> runs the check again and rebuilds this site's data from the workbook.</li>
     </ol>

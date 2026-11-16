@@ -7,7 +7,8 @@
 Fetched automatically (no API key):
     m2, gdp, cpi, rate, rrp   FRED (M2SL, GDP, CPIAUCNS, DFEDTARU, RRPONTSYD)
     debt                      US Treasury Debt to the Penny
-    stable                    DefiLlama, USD stablecoin supply (the Flow sheet's locked USD)
+    stable, rwa               DefiLlama: USD stablecoin supply; RWA category (a narrow count)
+    bills                     US Treasury, Monthly Statement of the Public Debt: bills outstanding
 Estimated:
     gold_t                    previous quarter + about 900 tonnes (the workbook's method)
 To be filled in by hand in the JSON (no free quarter-end source):
@@ -35,7 +36,11 @@ FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={}&cosd=2018-01-01"
 DEBT = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny"
         "?fields=record_date,tot_pub_debt_out_amt&filter=record_date:gte:2019-10-01&sort=record_date&page[size]=10000")
 STABLE = "https://stablecoins.llama.fi/stablecoincharts/all"
-TOLERANCE = {"m2": 0.01, "gdp": 0.01, "debt": 0.01, "stable": 0.02, "rrp": 0.05, "cpi": 0.15, "rate": 0.001}   # relative, except cpi/rate (points)
+BILLS = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/debt/mspd/mspd_table_1"
+         "?fields=record_date,security_type_desc,total_mil_amt&filter=security_class_desc:eq:Bills,record_date:gte:2019-10-01"
+         "&sort=record_date&page[size]=1000")
+RWA = "https://api.llama.fi/charts/categories/RWA"          # a narrow count: see the data dictionary
+TOLERANCE = {"m2": 0.01, "gdp": 0.01, "debt": 0.01, "bills": 0.01, "stable": 0.02, "rwa": 0.05, "rrp": 0.05, "cpi": 0.15, "rate": 0.001}   # relative, except cpi/rate (points)
 
 
 def get(url):
@@ -119,12 +124,27 @@ def fetch(label):
     except Exception as e:
         notes["treasury"] = f"Treasury fetch failed: {e}"
     try:
+        bills = source("bills", lambda: [(date.fromisoformat(r["record_date"]), float(r["total_mil_amt"]))
+                                         for r in json.loads(get(BILLS))["data"] if r["security_type_desc"] == "Marketable"])
+        obs = [(d, v) for d, v in bills if d == end]
+        if obs:
+            out["bills"], notes["bills"] = round(obs[-1][1] / 1e6, 3), f"Treasury MSPD table 1, bills, {end}"
+    except Exception as e:
+        notes["treasury_bills"] = f"Treasury bills fetch failed: {e}"
+    try:
         stable = source("stable", lambda: sorted(
             (datetime.fromtimestamp(int(r["date"]), timezone.utc).date(), r["totalCirculatingUSD"].get("peggedUSD"))
             for r in json.loads(get(STABLE)) if r["totalCirculatingUSD"].get("peggedUSD")))
         obs = [(d, v) for d, v in stable if d <= end]
         if obs and (end - obs[-1][0]).days <= 7:
             out["stable"], notes["stable"] = round(obs[-1][1] / 1e12, 4), f"DefiLlama stablecoins {obs[-1][0]}"
+        rwa = source("rwa", lambda: sorted((datetime.fromtimestamp(int(t), timezone.utc).date(), v)
+                                           for t, v in json.loads(get(RWA))["tvl"].items()))
+        obs = [(d, v) for d, v in rwa if d <= end]
+        if obs and (end - obs[-1][0]).days <= 7:
+            out["rwa"], notes["rwa"] = round(obs[-1][1] / 1e12, 5), f"DefiLlama RWA category {obs[-1][0]} (narrow count)"
+        elif rwa and end < rwa[0][0]:
+            out["rwa"], notes["rwa"] = 0, "before the DefiLlama RWA series starts"
     except Exception as e:
         notes["defillama"] = f"DefiLlama fetch failed: {e}"
     return out, notes
@@ -150,16 +170,16 @@ if args.audit:
             compared += 1
             have = row[k]
             diff = v - have
-            limit = TOLERANCE[k] if k in ("cpi", "rate") else max(TOLERANCE[k] * abs(v), 0.0005 if k == "stable" else 0.011)
+            limit = TOLERANCE[k] if k in ("cpi", "rate") else max(TOLERANCE[k] * abs(v), 0.0005 if k == "stable" else 0.0002 if k == "rwa" else 0.011)
             if abs(diff) > limit:
                 differ += 1
-                d = 4 if k == "stable" else 2
+                d = 4 if k in ("stable", "rwa") else 2
                 print(f"{row['quarter']:<9}{k:<8}{have:>10.{d}f}{v:>10.{d}f}{diff:>+9.{d}f}   {notes[k]}")
-    for k in ("fred", "treasury", "defillama"):
+    for k in ("fred", "treasury", "treasury_bills", "defillama"):
         if k in notes:
             print(f"WARNING: {notes[k]}")
     print(f"\n{compared} values compared, {differ} differ by more than the tolerance "
-          f"(1% for m2/gdp/debt, 2% for stable, 5% for rrp, 0.15pp for cpi, exact for rate).")
+          f"(1% for m2/gdp/debt/bills, 2% for stable, 5% for rrp/rwa, 0.15pp for cpi, exact for rate).")
     print("Not compared: equity, crypto, gold, gold_t (no free source). GDP is the latest vintage; the workbook holds\n"
           "earlier vintages for some quarters. Nothing was changed. To apply a value: add_quarter.py --quarter ... --<series> ...")
     sys.exit(0)
@@ -192,7 +212,7 @@ print(f"{args.quarter}")
 for k in lib.ALL_INPUTS:
     v = inputs[k]
     print(f"  {k:<7} {'--' if v is None else v:>10}   {notes.get(k, 'not available yet')}")
-for k in ("fred", "treasury", "defillama"):
+for k in ("fred", "treasury", "treasury_bills", "defillama"):
     if k in notes:
         print(f"  WARNING: {notes[k]}")
 missing = [k for k, v in inputs.items() if v is None]

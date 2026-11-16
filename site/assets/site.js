@@ -36,11 +36,11 @@
   /* The chain of tiles: flowing USD -> free USD -> stablecoin base (locked bonds + locked USD) -> V -> market cap. */
   function chain(fm, backing, live) {
     const F = fm.latest, VS = fm.stats, base = live ? live.stable : F.base, cap = live ? live.cap : F.actual, v = cap / base;
-    const asof = live ? ", " + F.quarter : "", L = CryptoModel.legs(base, F.m2, F.debt, backing);
+    const asof = live ? ", " + F.quarter : "", L = CryptoModel.legs(base, F.m2, F.bills, backing);
     return kpi("1 · Flowing USD", fmt.usdT(F.m2, true), "M2 money stock" + asof) +
       kpi("2 · Free USD", fmt.usdT(F.free, true), "M2 − GDP ÷ V*: not tied up in the real economy" + asof) +
-      kpi("3 · Stablecoin base", B(base), `crypto's general equivalent · ${SH(base / F.m2)} of M2`) +
-      kpi("3a · Locked bonds", B(L.bonds), `short-term Treasuries holding the peg, at ${Math.round(backing * 100)}% · ${SH(L.bondShare)} of public debt`) +
+      kpi("3 · Stablecoin base", B(base), `a general equivalent in crypto · ${SH(base / F.m2)} of M2`) +
+      kpi("3a · Locked bonds", B(L.bonds), `short-term Treasuries holding the peg, at ${Math.round(backing * 100)}% · ${(L.bondShare * 100).toFixed(1)}% of Treasury bills`) +
       kpi("3b · Locked USD", B(L.cash), L.cash > 0 ? `cash reserves, the only M2 dollars in the base · ${SH(L.cashShare)} of M2` : "none: the base rests on bonds alone") +
       kpi("4 · Crypto V", X(v), live && live.volume ? `market cap per stablecoin dollar · the base turns over ${(live.volume / base).toFixed(2)}× a day in trading`
         : `market cap per stablecoin dollar · median ${X(VS.med)}`) +
@@ -65,11 +65,13 @@
         row("Crypto market cap, one year", fmt.pct(s.cryptoYoy), "against equities over the same year, above") +
         row("Crypto ÷ US equities", (s.cryptoToEquity * 100).toFixed(1) + "%", "crypto's size next to the stock market") +
         row("Crypto beta to equities", s.beta.toFixed(1) + "×", "quarterly returns; crypto moves like leveraged equity") +
+        row("Tokenised RWAs on-chain", B(t.rwa), `a narrow count; with them the base carries ${t.vBroad.toFixed(2)}×`) +
         row("Crypto ÷ gold", (s.cryptoToGold * 100).toFixed(0) + "%", `all above-ground gold is worth ${fmt.usdT(s.gold, true)}`)) +
       box("The Treasury market", "Where the peg is held.",
         row("Total public debt", fmt.usdT(t.debt, true), `+${fmt.usdT(t.debtYoy, true)} over a year`) +
         row("Locked bonds", B(t.collateral), "Treasuries held by stablecoin issuers: base × assumed backing share") +
-        row("Share of public debt", (t.shareOfDebt * 100).toFixed(2) + "%", "small against the stock of debt") +
+        row("Treasury bills outstanding", fmt.usdT(t.bills, true), `${fmt.pct(t.billsYoy, 1)} over a year · ${Math.round(t.billsOfDebt * 100)}% of the debt`) +
+        row("Share of Treasury bills", (t.shareOfBills * 100).toFixed(1) + "%", `locked bonds against the bills that can hold the peg · ${(t.shareOfDebt * 100).toFixed(2)}% of all debt`) +
         row("Share of the year's new debt", (t.shareOfNewDebt * 100).toFixed(1) + "%", "stablecoin growth as a buyer at the margin") +
         row("Interest earned by issuers", B(t.income) + " a year", "locked bonds × policy rate: holders of stablecoins forgo it") +
         row("Locked USD", B(t.cash), `cash reserves · ${SH(t.cashShare)} of M2`));

@@ -118,9 +118,9 @@
   }
 
   /* ---------------------------------------------------------------- liquidity flow
-     Stablecoins are crypto's general equivalent: tokens, RWAs and ABS are priced and settled in them.
+     Stablecoins are a general equivalent in crypto (not the only one: fiat buys crypto directly).
      The stablecoin base stands on two legs:
-       locked bonds = base x backing          short-term Treasuries that hold the peg
+       locked bonds = base x backing          short-term Treasuries that hold the peg, measured against T-bills outstanding
        locked USD   = base x (1 - backing)    cash reserves, the only part that is M2 dollars
      market cap = crypto V x base = V x (locked bonds + locked USD)
      The last line is an identity: V is DEFINED as cap / base. With backing at 100% locked USD is
@@ -134,7 +134,7 @@
     const P = data.params;
     const rows = data.quarters.filter(r => r.stable != null).map(r => {
       const free = r.m2 - r.gdp / P.v_star;
-      return { quarter: r.quarter, m2: r.m2, gdp: r.gdp, debt: r.debt, actual: r.crypto, free, base: r.stable,
+      return { quarter: r.quarter, m2: r.m2, gdp: r.gdp, debt: r.debt, bills: r.bills, rwa: r.rwa || 0, actual: r.crypto, free, base: r.stable,
                share: r.stable / r.m2, shareFree: free > 0 ? r.stable / free : null, v: r.crypto / r.stable };
     });
     const vs = rows.slice(-lookback).map(r => r.v).sort((x, y) => x - y);
@@ -146,32 +146,32 @@
   }
 
   /* The two legs of a base, and what each is measured against. */
-  function legs(base, m2, debt, backing) {
+  function legs(base, m2, bills, backing) {
     const bonds = base * backing, cash = base - bonds;
-    return { bonds, cash, bondShare: bonds / debt, cashShare: cash / m2 };
+    return { bonds, cash, bondShare: bonds / bills, cashShare: cash / m2 };
   }
 
-  /* Where the two legs alone would take the base: bonds follow public debt, cash follows M2. */
-  const anchors = (from, m2, debt, backing) => from.base * (backing * debt / from.debt + (1 - backing) * m2 / from.m2);
+  /* Where the two legs alone would take the base: bonds follow Treasury bills outstanding, cash follows M2. */
+  const anchors = (from, m2, bills, backing) => from.base * (backing * bills / from.bills + (1 - backing) * m2 / from.m2);
 
   /* Growth of the base over the last year, per year, split into what the two legs explain and the rest
      (growth in use: more trading, payments, RWAs and ABS settled in stablecoins). */
   function baseTrend(fm, backing) {
     const r = fm.rows, n = r.length, a = r[n - 5], b = r[n - 1];
-    const growth = b.base / a.base - 1, legsGrowth = anchors(a, b.m2, b.debt, backing) / a.base - 1;
-    return { growth, legs: legsGrowth, use: (1 + growth) / (1 + legsGrowth) - 1, debt: b.debt / a.debt - 1 };
+    const growth = b.base / a.base - 1, legsGrowth = anchors(a, b.m2, b.bills, backing) / a.base - 1;
+    return { growth, legs: legsGrowth, use: (1 + growth) / (1 + legsGrowth) - 1, bills: b.bills / a.bills - 1 };
   }
 
-  /* s: { baseGrowth (per year), vEnd, horizon, m2Growth, debtGrowth }. The base grows at the given rate and V moves
-     geometrically to its target. M2 and public debt are carried along for display; they do not move the result. */
+  /* s: { baseGrowth (per year), vEnd, horizon, m2Growth, billsGrowth }. The base grows at the given rate and V moves
+     geometrically to its target. M2 and Treasury bills are carried along for display; they do not move the result. */
   function projectFlow(fm, s) {
     const last = fm.latest, out = [];
     let label = last.quarter;
     for (let h = 1; h <= s.horizon; h++) {
       label = nextQuarter(label);
-      const m2 = last.m2 * Math.pow(1 + s.m2Growth, h / 4), debt = last.debt * Math.pow(1 + s.debtGrowth, h / 4);
+      const m2 = last.m2 * Math.pow(1 + s.m2Growth, h / 4), bills = last.bills * Math.pow(1 + s.billsGrowth, h / 4);
       const base = last.base * Math.pow(1 + s.baseGrowth, h / 4), v = last.v * Math.pow(s.vEnd / last.v, h / s.horizon);
-      out.push({ quarter: label, h, m2, debt, base, v, path: v * base,
+      out.push({ quarter: label, h, m2, bills, base, v, path: v * base,
                  implied: fm.stats.med * base, lo: fm.stats.q1 * base, hi: fm.stats.q3 * base });
     }
     return out;
@@ -194,13 +194,15 @@
                 cryptoYoy: r.crypto / y.crypto - 1, beta, gold: gold(r), cryptoToGold: r.crypto / gold(r) },
       treasury: { debt: r.debt, debtYoy: r.debt - y.debt, collateral: r.stable * backing, shareOfDebt: r.stable * backing / r.debt,
                   shareOfNewDebt: (r.stable - y.stable) * backing / (r.debt - y.debt), income: r.stable * backing * r.rate / 100,
-                  cash: r.stable * (1 - backing), cashShare: r.stable * (1 - backing) / r.m2 },
+                  cash: r.stable * (1 - backing), cashShare: r.stable * (1 - backing) / r.m2,
+                  bills: r.bills, billsYoy: r.bills / y.bills - 1, billsOfDebt: r.bills / r.debt, shareOfBills: r.stable * backing / r.bills,
+                  rwa: r.rwa || 0, vBroad: (r.crypto + (r.rwa || 0)) / r.stable },
     };
   }
 
   /* ---------------------------------------------------------------- driver model (the default forecast)
-     Base:        S = bond leg + cash leg, x growth in use     (the Treasury's lever: debt; the Fed's: M2)
-                  the bond leg follows public debt, the cash leg follows M2
+     Base:        S = bond leg + cash leg, x growth in use     (the Treasury's lever: bills; the Fed's: M2)
+                  the bond leg follows Treasury bills outstanding, the cash leg follows M2
      Crypto V:    dln V = beta * dln Equity + kappa * (mean ln V - ln V[-1])
                                                               (Wall Street's lever, plus a pull back to V's own average)
      Market cap = V x S
@@ -213,8 +215,8 @@
     const lc = Q.map(r => Math.log(r.crypto)), lv = Q.map(r => Math.log(r.crypto / r.stable));
     const d = k => Q.map((r, t) => (t ? Math.log(r[k] / Q[t - 1][k]) : null));
     const dc = d("crypto"), de = d("equity"), dv = lv.map((v, t) => (t ? v - lv[t - 1] : null));
-    // growth of the base that the two legs alone give: bonds with public debt, cash with M2
-    const dm = Q.map((r, t) => (t ? Math.log(backing * r.debt / Q[t - 1].debt + (1 - backing) * r.m2 / Q[t - 1].m2) : null));
+    // growth of the base that the two legs alone give: bonds with Treasury bills, cash with M2
+    const dm = Q.map((r, t) => (t ? Math.log(backing * r.bills / Q[t - 1].bills + (1 - backing) * r.m2 / Q[t - 1].m2) : null));
     const mean = (a, from, to) => { let s = 0; for (let i = from; i < to; i++) s += a[i]; return s / (to - from); };
 
     function fitV(end) {                           // observations 2 .. end-1, each using only its own past
@@ -248,18 +250,18 @@
              table, forecasts: n - first, rmse: table[2].rmseC, upShare: runs.cond[0].filter((x, i) => dc[first + i] > 0).length / (n - first) };
   }
 
-  /* s: { m2Growth, debtGrowth, eqGrowth, useGrowth (all per year), backing, horizon }.
+  /* s: { m2Growth, billsGrowth, eqGrowth, useGrowth (all per year), backing, horizon }.
      useGrowth is growth of the base beyond what its two legs give. */
   function projectDrivers(dm, fm, s) {
     const last = fm.latest, out = [], eqQ = Math.log(1 + s.eqGrowth) / 4;
     let label = last.quarter, lnV = Math.log(last.v);
     for (let h = 1; h <= s.horizon; h++) {
       label = nextQuarter(label);
-      const m2 = last.m2 * Math.pow(1 + s.m2Growth, h / 4), debt = last.debt * Math.pow(1 + s.debtGrowth, h / 4);
-      const base = anchors(last, m2, debt, s.backing) * Math.pow(1 + s.useGrowth, h / 4);
+      const m2 = last.m2 * Math.pow(1 + s.m2Growth, h / 4), bills = last.bills * Math.pow(1 + s.billsGrowth, h / 4);
+      const base = anchors(last, m2, bills, s.backing) * Math.pow(1 + s.useGrowth, h / 4);
       lnV += dm.beta * eqQ + dm.kappa * (dm.lnVbar - lnV);
       const v = Math.exp(lnV), path = v * base, band = Math.exp(dm.rmse * Math.sqrt(h));
-      out.push({ quarter: label, h, m2, debt, base, v, path, implied: fm.stats.med * base, lo: fm.stats.q1 * base, hi: fm.stats.q3 * base,
+      out.push({ quarter: label, h, m2, bills, base, v, path, implied: fm.stats.med * base, lo: fm.stats.q1 * base, hi: fm.stats.q3 * base,
                  errLo: path / band, errHi: path * band });
     }
     return out;

@@ -1,6 +1,6 @@
 # Data dictionary
 
-Every input series: ten on the `Model` sheet and one on the `Flow` sheet. This mirrors the `Data_Sources` sheet as of 16 November 2026; if the two ever differ, the sheet is the record.
+Every input series: ten on the `Model` sheet and three on the `Flow` sheet. This mirrors the `Data_Sources` sheet as of 16 November 2026; if the two ever differ, the sheet is the record.
 
 ## Confidence grades
 
@@ -47,8 +47,16 @@ Only M2, US equity market cap and crypto market cap drive the fair value. The po
 | Column | Series | Definition | Unit | Source | Used in |
 |---|---|---|---|---|---|
 | G | Stablecoin supply | Total circulating USD-pegged stablecoins, last observation of the quarter | $T | DefiLlama — https://stablecoins.llama.fi/stablecoincharts/all | The stablecoin base in the liquidity-flow and driver models |
+| X | Treasury bills outstanding | Marketable Treasury bills outstanding, last day of the quarter | $T | US Treasury, Monthly Statement of the Public Debt, table 1 — https://fiscaldata.treasury.gov/datasets/monthly-statement-public-debt/ | What the bond leg is measured against, and what it follows in scenarios |
+| Y | Tokenised RWAs on-chain | Value locked in protocols DefiLlama classes as RWA, last day of the quarter | $T | DefiLlama — https://api.llama.fi/charts/categories/RWA | Memo: broad V. No forecast |
 
-Fetched on 16 November 2026 and matched against the source that day (grade A). It is a single-source series, and the source revises history as it adds coins; `make audit` shows any drift. It covers 2019 Q4 onward: $4B then, $304B in 2026 Q3. It has its own row on the `Data_Sources` sheet.
+Stablecoin supply was fetched on 16 November 2026 and matched against the source that day (grade A). It is a single-source series, and the source revises history as it adds coins; `make audit` shows any drift. It covers 2019 Q4 onward: $4B then, $304B in 2026 Q3. 
+
+Treasury bills (grade A) are an official monthly series: $2.4T at the end of 2019, $7.1T in 2026 Q3, about 18% of the debt.
+
+Tokenised RWAs (grade B) are a narrow count. The series starts on 22 April 2021 and is entered as zero before that. It reads $4.1B in 2026 Q3 and leaves out the large tokenised Treasury funds, which DefiLlama lists with no value, so it understates the market that industry trackers report. No free source carries a fuller history.
+
+All three have rows on the `Data_Sources` sheet.
 
 The share of stablecoin reserves held in US Treasuries is not a data series. It is an assumption on `Params` (75% by default).
 

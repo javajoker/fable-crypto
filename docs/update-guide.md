@@ -6,11 +6,11 @@ The [toolset](toolset.md) does the same from the command line and fetches most o
 
 ## Adding a quarter
 
-1. **Collect the eleven inputs** for the quarter that has ended: ten for `Model` and stablecoin supply for `Flow`. Definitions, sources and links are in the [data dictionary](data-dictionary.md). Use the same definitions as earlier rows (for example quarter-end month for M2, upper bound for the Fed funds target).
+1. **Collect the thirteen inputs** for the quarter that has ended: ten for `Model`, and stablecoin supply, Treasury bills outstanding and tokenised RWAs for `Flow`. Definitions, sources and links are in the [data dictionary](data-dictionary.md). Use the same definitions as earlier rows (for example quarter-end month for M2, upper bound for the Fed funds target).
 2. **Insert a row** on `Model` directly above the yellow scenario row. Right-click the scenario row's number and choose Insert.
 3. **Copy the row above** into the new row (the whole row, columns B to AO).
 4. **Type the new values** over the copied ones: the quarter label in B and the inputs in C to L. Follow the colour convention: plain blue for sourced values, italic blue for estimates.
-5. **Repeat on `Flow`.** Insert a row above its scenario row, at the same row number as on `Model`, copy the row above into it, and type the stablecoin supply in column G. The two sheets must keep the same row numbers, because `Flow` reads `Model` by row.
+5. **Repeat on `Flow`.** Insert a row above its scenario row, at the same row number as on `Model`, copy the row above into it, and type the stablecoin supply in column G, Treasury bills in X and tokenised RWAs in Y. The two sheets must keep the same row numbers, because `Flow` reads `Model` by row.
 6. **Refresh the scenario row.** Change its label to the next quarter, keeping the text `(scenario)`, and set its yellow inputs. Clear its crypto cell unless you want a scenario gap.
 7. **Check `Summary`.** The latest quarter should be the one you added, and all nine integrity checks should read `OK`.
 8. **Update the records.** Add the quarter's sources and confidence grades to `Data_Sources`, and re-read the written verdict on `Backtest` against the new numbers.
@@ -57,7 +57,7 @@ Blue cells can be overwritten at any time, for example when GDP is revised. Note
 | Symptom | Likely cause |
 |---|---|
 | `Scenario row found` reads `CHECK` | The scenario label lost the text `(scenario)` |
-| `Stablecoin base filled in` reads `CHECK` | A row was added on `Model` but not on `Flow`, or its stablecoin cell is empty |
+| `Flow inputs filled in` reads `CHECK` | A row was added on `Model` but not on `Flow`, or one of its three input cells is empty |
 | `Flow` shows the wrong quarter's figures | `Flow` and `Model` no longer have the same row numbers |
 | The latest quarter on `Summary` is not the one added | The new row was inserted below the scenario row, or a second label contains `(scenario)` |
 | `No blank inputs` or `All inputs numeric` reads `CHECK` | A missing value, or a number typed as text (often a trailing space or a `$` sign) |

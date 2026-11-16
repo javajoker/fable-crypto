@@ -1,6 +1,6 @@
 # Workbook guide
 
-A reference for the layout of `crypto_model_v2.xlsx` (v2.3). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
+A reference for the layout of `crypto_model_v2.xlsx` (v2.4). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
 
 ## Colour conventions
 
@@ -55,11 +55,13 @@ The stablecoin base, its two legs and the driver model. Its rows match `Model` o
 | Columns | Group | Content |
 |---|---|---|
 | B–F | Linked from Model | Quarter, M2, GDP, crypto market cap, US equity cap |
-| G | Input | Stablecoin supply (the base). In the scenario row it defaults to the bond leg growing with the scenario's public debt plus the cash leg growing with its M2; type over it to add growth in use |
+| G | Input | Stablecoin supply (the base). In the scenario row it defaults to the bond leg growing with Treasury bills (column X) plus the cash leg growing with M2; type over it to add growth in use |
 | H–K | The chain | Free USD, base ÷ M2, base ÷ free USD, locked bonds (base × backing share) |
 | L–P | Crypto V | V, ln V, its change, the change in ln equity cap, the pull toward V's running average |
 | Q–S | Driver model | V and market cap one quarter ahead given that quarter's equity move and base, and the miss against the actual |
 | T–W | Two legs | Public debt (from `Model`), locked USD (base × (1 − backing share)), locked bonds ÷ public debt, locked USD ÷ M2 |
+| X–Y | Inputs | Treasury bills outstanding; tokenised RWAs on-chain (a narrow count). In the scenario row bills default to growing with the scenario's public debt, and RWAs carry forward |
+| Z–AA | T-bills and RWAs | Locked bonds ÷ Treasury bills; broad V, (market cap + RWAs) ÷ base |
 
 Columns Q–S use coefficients fitted on the whole sample, so for past quarters they show fit, not forecasts. The out-of-sample test is in the web app.
 
@@ -113,7 +115,7 @@ And on `Flow`:
 
 | Name | Column on `Flow` | Used for |
 |---|---|---|
-| `Flow_Locked` | G | Stablecoin supply (the "Stablecoin base filled in" check) |
+| `Flow_Locked`, `Flow_Bills`, `Flow_RWA` | G, X, Y | The three inputs (the "Flow inputs filled in" check) |
 | `Flow_V`, `Flow_lnV` | L, M | Crypto V and its log |
 | `Flow_dV` | N | Change in ln V, from the third quarter on (dependent variable of the V equation) |
 | `Flow_X` | O:P | Its two regressors |
@@ -159,7 +161,7 @@ On `Summary`. Each returns `OK` or `CHECK`.
 | Residuals sum to zero | The fair-value columns and the regression are on different samples |
 | Minimum window is usable | The window is below 4 or leaves almost nothing to test on |
 | No formula errors on Model | Any calculated cell on `Model` shows an error |
-| Stablecoin base filled in | `Flow` lacks a stablecoin value for an actual quarter |
+| Flow inputs filled in | `Flow` lacks a stablecoin, Treasury-bill or RWA value for an actual quarter |
 
 ## Compatibility
 

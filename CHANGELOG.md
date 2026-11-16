@@ -1,5 +1,35 @@
 # Changelog
 
+## v2.4 — 16 November 2026
+
+### Added
+
+- **Treasury bills outstanding** as an input (`Flow` column X), from the Treasury's Monthly Statement of the Public Debt, for all 28 quarters. The bond leg is now measured against bills (3.2% of them in 2026 Q3) and follows them in scenarios, in place of total public debt.
+- **Tokenised RWAs on-chain** as an input (`Flow` column Y), from DefiLlama's RWA category. It is a narrow count, $4.1B in 2026 Q3, and a memo: it feeds "broad V" (column AA) and no forecast.
+- `Flow` column Z (locked bonds ÷ Treasury bills), names `Flow_Bills` and `Flow_RWA`, two rows on `Data_Sources`, an RWA memo line on `Summary`.
+- `fetch_inputs.py` fetches and audits both; `add_quarter.py` takes `--bills` and `--rwa`. A new quarter now needs thirteen inputs, nine of them fetched.
+
+### Changed
+
+- **Wording.** Stablecoins are described as a general equivalent in crypto, not the only one: fiat buys crypto directly, and stablecoins are also spent outside crypto. The portal headline is now "What stands behind crypto market cap?".
+- The scenario row's bills default to growing with the scenario's public debt; the base follows bills and M2.
+- The app's Treasury slider is growth of bills outstanding. The "recent trend" default is 11.5% a year, so the default four-quarter scenario is higher than before ($3.83T against $3.70T).
+- The ninth integrity check is "Flow inputs filled in" and covers all three `Flow` inputs.
+- `check_model.py`: 34 checks.
+
+### Findings worth knowing
+
+- Bills do not forecast the base better than public debt did. Following bills and M2 missed the base's quarterly growth by a typical 9.1% over the last 16 quarters, against 8.7% for assuming no change.
+- The driver model's one-quarter-ahead error for market cap fell all the same: told the paths, it is 9% more accurate than "no change" (was 4%). With 16 forecasts, and no gain on the base itself, part of that is likely chance.
+- No free source carries full tokenised-RWA history. The series used leaves out the large tokenised Treasury funds.
+
+### Verification
+
+- Recalculated in Excel for Mac and LibreOffice: no errors, all nine integrity checks `OK`, 34 of 34 checks pass.
+- `make audit`: 252 values compared, 3 differences, all in reverse repo. Bills and RWAs match their sources.
+- `add_quarter.py` run on a copy with thirteen inputs: 34 of 34.
+- Web app checked in the browser.
+
 ## v2.3 — 16 November 2026
 
 The liquidity-flow model is rebuilt on a different footing. Stablecoins are treated as crypto's general equivalent, with their peg held by short-term US Treasuries, so the base of the market is locked bonds first and locked USD second. The model no longer depends on a share of M2. The regression model and its numbers are unchanged.

@@ -23,12 +23,14 @@ INPUTS = {
     "gold":   ("K", "Gold price, LBMA PM, quarter-end", "$/oz"),
     "gold_t": ("L", "Above-ground gold stock", "tonnes"),
 }
-# the one input on the Flow sheet
+# the inputs on the Flow sheet
 FLOW_INPUTS = {
     "stable": ("G", "USD stablecoin supply, quarter-end (the stablecoin base)", "$T"),
+    "bills":  ("X", "Treasury bills outstanding, quarter-end", "$T"),
+    "rwa":    ("Y", "Tokenised RWAs on-chain, quarter-end (narrow count)", "$T"),
 }
 ALL_INPUTS = {**INPUTS, **FLOW_INPUTS}
-FLOW_LAST_COL = 23              # W
+FLOW_LAST_COL = 27              # AA
 
 
 def cell_for(book, key, row):
@@ -62,7 +64,7 @@ def read_inputs(book):
         d = {"quarter": str(ws[f"B{r}"].value).replace(" (scenario)", "")}
         for key in ALL_INPUTS:
             cell = cell_for(book, key, r)
-            d[key] = None if isinstance(cell.value, str) else cell.value     # the scenario's locked USD is a formula
+            d[key] = None if isinstance(cell.value, str) else cell.value     # scenario defaults on Flow are formulas
             if cell.font is not None and cell.font.i:
                 d.setdefault("estimated", []).append(key)
         return d

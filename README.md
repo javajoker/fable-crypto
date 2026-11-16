@@ -1,11 +1,11 @@
 # Crypto Macro Fair-Value Model
 
-How much crypto market cap can the stablecoin base carry? Stablecoins are crypto's general equivalent: tokens, RWAs and ABS are priced and settled in them. Short-term US Treasuries hold their peg, so this project measures the base as locked bonds first and locked dollars second, and then the multiple the market puts on it. It reads the result against the Federal Reserve, the Treasury market and Wall Street.
+What stands behind crypto market cap? Stablecoins are a general equivalent in crypto, though not the only one: fiat also buys crypto directly, and stablecoins are also spent outside crypto. They are the part that can be counted. Tokens, RWAs and ABS are priced and settled in them. Short-term US Treasuries hold their peg, so this project measures the base as locked bonds first and locked dollars second, and then the multiple the market puts on it. It reads the result against the Federal Reserve, the Treasury market and Wall Street.
 
 It has three parts:
 
 - **A web app and portal** in [site/](site/index.html): the base and its two legs today, scenario forecasts for total crypto and Bitcoin, and the docs. Static files, no backend.
-- **An Excel workbook**, [docs/crypto_model_v2.xlsx](docs/crypto_model_v2.xlsx) (v2.3): the same chain and driver model on its `Flow` sheet, plus a regression of crypto market cap on M2 and US equity wealth used as a cross-check. Every result is a live formula.
+- **An Excel workbook**, [docs/crypto_model_v2.xlsx](docs/crypto_model_v2.xlsx) (v2.4): the same chain and driver model on its `Flow` sheet, plus a regression of crypto market cap on M2 and US equity wealth used as a cross-check. Every result is a live formula.
 - **A toolset** in [scripts/](scripts/): fetch new data, add a quarter, verify, rebuild the site.
 
 Not investment advice.
@@ -16,15 +16,15 @@ Not investment advice.
 |---|---|---|
 | 1. Flowing USD | M2 money stock | $23.4T |
 | 2. Free USD | M2 − GDP ÷ V*: not needed by the real economy at normal velocity | $0.64T |
-| 3. Stablecoin base | USD stablecoin supply: crypto's general equivalent | $304B (1.30% of M2) |
-| 3a. Locked bonds | Base × share of reserves in short-term Treasuries (assumed 75%) | $228B (0.57% of public debt) |
+| 3. Stablecoin base | USD stablecoin supply: a general equivalent in crypto | $304B (1.30% of M2) |
+| 3a. Locked bonds | Base × share of reserves in short-term Treasuries (assumed 75%) | $228B (3.2% of Treasury bills) |
 | 3b. Locked USD | The cash part of the reserves, the only M2 dollars in the base | $76B (0.32% of M2) |
 | 4. Crypto V | Market cap ÷ base: what trading makes of each stablecoin dollar | 9.7× |
 | Result | Crypto market cap = V × (locked bonds + locked USD) | $2.96T |
 
 The model does not need locked USD: a dollar that buys a stablecoin is spent by the issuer on a Treasury bill and goes on circulating, so what stays locked is the bill. At 100% backing locked USD is zero and the model runs unchanged on locked bonds.
 
-The app's default forecast, the driver model, lets the Treasury move the bond leg through public debt, the Fed move the cash leg through M2, and Wall Street move crypto V through equities. Tested out of sample it is a translator, not an oracle: told where equities went, it was 4% more accurate than assuming no change; not told, it was no better. A typical one-quarter error is about 26%.
+The app's default forecast, the driver model, lets the Treasury move the bond leg through bills outstanding, the Fed move the cash leg through M2, and Wall Street move crypto V through equities. Tested out of sample it is a translator, not an oracle: told where equities went, it was 9% more accurate than assuming no change over 16 test quarters; not told, it was no better. A typical one-quarter error is about 26%.
 
 ## Quick start
 
@@ -79,7 +79,7 @@ These figures are also on the workbook's `Summary` sheet and on the portal, wher
 python3 scripts/fetch_inputs.py "2026 Q4"
 ```
 
-fetches seven of the eleven inputs from FRED, the Treasury and DefiLlama and writes a file with three values to fill in by hand. Then:
+fetches nine of the thirteen inputs from FRED, the Treasury and DefiLlama and writes a file with three values to fill in by hand. Then:
 
 ```bash
 python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json
@@ -120,7 +120,7 @@ The model in one line: `ln(Crypto) = a + b1·ln(M2) + b2·ln(Equity)`, estimated
 python3 scripts/check_model.py
 ```
 
-The script reads the blue input cells, recomputes the regression, the real-time signal and the backtest without using any spreadsheet formulas, and compares 32 results with the workbook's. It needs Python 3 and `openpyxl`. `make update` runs it for you.
+The script reads the blue input cells, recomputes the regression, the real-time signal and the backtest without using any spreadsheet formulas, and compares 34 results with the workbook's. It needs Python 3 and `openpyxl`. `make update` runs it for you.
 
 ## What changed in v2.1
 
@@ -139,7 +139,8 @@ Full list in the [changelog](CHANGELOG.md).
 The main ones, explained in [methodology](docs/methodology.md#limitations):
 
 - No model here beats "no change" at forecasting crypto market cap unless it is told where equities go.
-- The split of the base into locked bonds and locked USD rests on an assumed backing share, and total public debt stands in for Treasury bills.
+- The split of the base into locked bonds and locked USD rests on an assumed backing share.
+- Stablecoins are one general equivalent among several. Fiat that buys crypto directly is not in the base, and the tokenised-RWA series is a narrow count used only as a memo.
 - The two legs explain little of the base's growth; most of it is growth in use, which the model takes as a setting.
 - 28 quarters is a small sample, and only 15 can be tested out of sample.
 - Cointegration is not established, so there is no statistical evidence that gaps close.

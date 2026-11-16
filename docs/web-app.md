@@ -18,14 +18,14 @@ then visit http://localhost:8765. To publish it, upload the `site/` folder to an
 
 ## The idea behind the forecast
 
-Stablecoins are crypto's general equivalent: tokens, RWAs and ABS are priced and settled in them. Short-term US Treasuries hold their peg. So the app starts from the stablecoin base and what backs it:
+Stablecoins are a general equivalent in crypto, though not the only one: fiat also buys crypto directly, and stablecoins are also spent outside crypto. They are the part that can be counted. Tokens, RWAs and ABS are priced and settled in them. Short-term US Treasuries hold their peg. So the app starts from the stablecoin base and what backs it:
 
 | Step | Measure | 2026 Q3 |
 |---|---|---|
 | 1. Flowing USD | M2 money stock | $23.4T |
 | 2. Free USD | `M2 − GDP ÷ V*`: money not needed to turn the real economy over at normal velocity | $0.64T |
 | 3. Stablecoin base | Supply of USD stablecoins | $304B |
-| 3a. Locked bonds | Base × the share of reserves held in short-term Treasuries | $228B at 75% |
+| 3a. Locked bonds | Base × the share of reserves held in short-term Treasuries | $228B at 75% (3.2% of Treasury bills) |
 | 3b. Locked USD | The cash part of the reserves, the only M2 dollars in the base | $76B |
 | 4. Crypto V | Market cap ÷ base: what secondary-market trading makes of each stablecoin dollar | 9.7× |
 | Result | Crypto market cap = V × (locked bonds + locked USD) | $2.96T |
@@ -34,13 +34,13 @@ Steps 1 and 2 are for scale; M2 does not cap the base. The equations and the evi
 
 ## Using the forecast app
 
-**The chain today.** Seven tiles, one per step. The slider underneath sets the Treasury share of stablecoin reserves, starting from the value on the workbook's `Params` sheet. That share is an assumption, because no free series reports reserve composition; it splits the base into locked bonds and locked USD and never changes today's market cap. In the driver model it also sets how much of the base follows public debt and how much follows M2. At 100% locked USD is zero and the app works the same on bonds alone.
+**The chain today.** Seven tiles, one per step. The slider underneath sets the Treasury share of stablecoin reserves, starting from the value on the workbook's `Params` sheet. That share is an assumption, because no free series reports reserve composition; it splits the base into locked bonds and locked USD and never changes today's market cap. In the driver model it also sets how much of the base follows Treasury bills and how much follows M2. At 100% locked USD is zero and the app works the same on bonds alone.
 
 **Scenario.** Three ways to project, chosen with the buttons above the chart:
 
 | Mode | You set | The app works out |
 |---|---|---|
-| Driver model (default) | M2 growth (the Fed), public debt growth (the Treasury), US equity growth (Wall Street), growth in the use of stablecoins | The two legs of the base and crypto V |
+| Driver model (default) | M2 growth (the Fed), growth of Treasury bills outstanding (the Treasury), US equity growth (Wall Street), growth in the use of stablecoins | The two legs of the base and crypto V |
 | Set the base and V yourself | Growth of the stablecoin base and crypto V at the horizon | Nothing is estimated; it is the chain as pure arithmetic |
 | Cross-check: macro regression | M2 growth, equity growth, how fast today's valuation gap closes | The regression fair value from the workbook |
 
@@ -49,12 +49,12 @@ Each mode has presets (recent trend, soft landing, risk-on, equity bear market, 
 **The wider frame.** Three tables for the latest quarter:
 
 - **The Federal Reserve**: M2 and its growth, the policy rate and its change, the real policy rate, reverse repo, the money overhang, free USD.
-- **Wall Street**: US equity market cap, the Buffett ratio, crypto against equities and against gold, crypto's beta to equities.
-- **The Treasury market**: public debt, locked bonds, their share of the debt stock and of the year's new debt, the interest issuers earn on them, and locked USD.
+- **Wall Street**: US equity market cap, the Buffett ratio, crypto against equities and against gold, crypto's beta to equities, and tokenised RWAs on-chain (a narrow count, shown as a memo).
+- **The Treasury market**: public debt, Treasury bills outstanding, locked bonds, their share of the bills and of the year's new debt, the interest issuers earn on them, and locked USD.
 
 **Bitcoin.** The model has no Bitcoin data. The app converts total crypto market cap into a Bitcoin market cap and price using two inputs: Bitcoin's share of the market and its supply. Both are placeholders until you press **Load live market data**.
 
-**Live data.** The button reads total market cap, Bitcoin price and dominance, and 24-hour volume from CoinGecko, and current stablecoin supply from DefiLlama. It then shows the chain live and reports turnover velocity (trading volume ÷ base). M2, GDP and public debt stay at the latest quarter, and scenarios still start from the latest quarter. Nothing else is sent anywhere, and the app works without it.
+**Live data.** The button reads total market cap, Bitcoin price and dominance, and 24-hour volume from CoinGecko, and current stablecoin supply from DefiLlama. It then shows the chain live and reports turnover velocity (trading volume ÷ base). M2, GDP and Treasury bills stay at the latest quarter, and scenarios still start from the latest quarter. Nothing else is sent anywhere, and the app works without it.
 
 **How good is the forecast?** A table comparing the driver model with "no change" and with a plain equity-beta rule, on one-quarter-ahead forecasts made out of sample. It is recomputed in the browser whenever the data changes. Read it before relying on any scenario.
 
@@ -88,7 +88,8 @@ This checks the workbook and rebuilds the generated files. See the [toolset](too
 ## Limits
 
 - Dollars that bought coins directly or through ETFs never became stablecoins and are not in the base, so crypto V overstates what one dollar of inflow does to market cap.
-- Total public debt stands in for Treasury bills, and tokenised RWAs and ABS are only partly in the market-cap series.
+- Stablecoins are one general equivalent among several: fiat that buys crypto directly is not in the base.
+- The tokenised-RWA figure is a narrow count from one source and feeds no forecast.
 - Growth in the use of stablecoins is a setting, not a forecast. It has been the larger part of the base's growth.
 - The Treasury backing share is an assumption, and so is the split between locked bonds and locked USD.
 - Crypto V has ranged from 6× to 45× since 2019. Most of the uncertainty in any projection sits there.

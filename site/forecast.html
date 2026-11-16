@@ -9,7 +9,7 @@
 <body>
 <main class="wrap">
   <h1>How much crypto market cap can the stablecoin base carry?</h1>
-  <p class="lede">Stablecoins are crypto's general equivalent: tokens, and increasingly tokenised real-world assets and asset-backed securities, are priced and settled in them. Their peg is held by short-term US Treasuries, so the base of the market is locked bonds first and locked dollars second. Trading multiplies that base into market cap. Set each step and see where total crypto and Bitcoin end up.</p>
+  <p class="lede">Stablecoins are a general equivalent in crypto, though not the only one, since fiat buys crypto directly: tokens, and increasingly tokenised real-world assets and asset-backed securities, are priced and settled in them. Their peg is held by short-term US Treasuries, so the base of the market is locked bonds first and locked dollars second. Trading multiplies that base into market cap. Set each step and see where total crypto and Bitcoin end up.</p>
 
   <div class="callout"><b>Read this first.</b> This is a scenario tool, not a prediction. It turns a view on the Fed, the Treasury and Wall Street into a crypto market cap; it cannot supply the view. Tested out of sample, the model beats "no change" only when told where equities went (<a href="#tour">see the test</a>), and the regression cross-check has shown no timing skill (<span id="bt-inline"></span>).</div>
 
@@ -40,8 +40,8 @@
       <label>The Fed: M2 growth, per year <span id="dm2-v"></span></label>
       <input type="range" id="dm2" min="-5" max="15" step="0.5">
       <div class="hint">Moves flowing USD, and the cash leg of the base with it.</div>
-      <label>The Treasury: public debt growth, per year <span id="ddb-v"></span></label>
-      <input type="range" id="ddb" min="0" max="15" step="0.5">
+      <label>The Treasury: growth of bills outstanding, per year <span id="ddb-v"></span></label>
+      <input type="range" id="ddb" min="-10" max="30" step="0.5">
       <div class="hint" id="ddb-hint"></div>
       <label>Wall Street: US equity market cap growth, per year <span id="deq-v"></span></label>
       <input type="range" id="deq" min="-40" max="40" step="1">
@@ -132,11 +132,11 @@
   <h2>How the numbers are made</h2>
   <div class="panel md">
     <p><b>The base.</b> A stablecoin keeps its peg because the issuer holds short-term US Treasuries against it. So the base has two legs: <code>locked bonds = base × backing share</code> and <code>locked USD = base × (1 − backing share)</code>, the cash part of the reserves. Only the cash leg ties up M2 dollars. A dollar that buys a stablecoin is spent by the issuer on a Treasury bill and goes on circulating; what stays locked is the bill. Set the backing share to 100% and locked USD is zero while locked bonds are not, and every number below is computed the same way.</p>
-    <p><b>The general equivalent.</b> Inside the crypto market the stablecoin is what everything else is priced and settled in: tokens, and a growing set of tokenised real-world assets (RWAs) and asset-backed securities (ABS). That is why the base can grow faster than either leg: over the last year it grew <span id="use-coefs"></span>. Crypto V is <code>market cap ÷ base</code>, the multiple that secondary-market trading puts on each stablecoin dollar, and <code>market cap = V × (locked bonds + locked USD)</code>.</p>
-    <p><b>Driver model.</b> The bond leg follows public debt (the Treasury), the cash leg follows M2 (the Fed), and growth in use comes on top. Crypto V moves with Wall Street and is pulled back toward its own average: <code>Δln V = β · Δln(US equity cap) + κ · (average ln V − last ln V)</code>, with <span id="drv-coefs"></span>. The band around the scenario path is the model's typical one-quarter error, widened with the square root of the horizon. The V equation was picked as the most stable of about twenty candidate forms, which itself flatters it a little.</p>
+    <p><b>The general equivalent.</b> Inside the crypto market the stablecoin is what most things are priced and settled in: tokens, and a growing set of tokenised real-world assets (RWAs) and asset-backed securities (ABS). That is why the base can grow faster than either leg: over the last year it grew <span id="use-coefs"></span>. Crypto V is <code>market cap ÷ base</code>, the multiple that secondary-market trading puts on each stablecoin dollar, and <code>market cap = V × (locked bonds + locked USD)</code>.</p>
+    <p><b>Driver model.</b> The bond leg follows Treasury bills outstanding (the Treasury), the cash leg follows M2 (the Fed), and growth in use comes on top. Crypto V moves with Wall Street and is pulled back toward its own average: <code>Δln V = β · Δln(US equity cap) + κ · (average ln V − last ln V)</code>, with <span id="drv-coefs"></span>. The band around the scenario path is the model's typical one-quarter error, widened with the square root of the horizon. The V equation was picked as the most stable of about twenty candidate forms, which itself flatters it a little.</p>
     <p><b>The dollar side.</b> Flowing USD is M2. Free USD is the part not needed to turn the real economy over at its normal pace: <code>M2 − GDP ÷ V*</code>, with V* = <span id="vstar"></span> (the 2015–2019 velocity of M2). It is shown for scale. It does not cap the base, because the base is backed by bonds. The shaded range in the chart uses the middle half of V over the last <span id="lookback"></span> quarters.</p>
     <p><b>Two meanings of V.</b> Crypto V here is market cap ÷ base, the counterpart of M2 velocity with market value in the place of GDP. Turnover velocity, trading volume ÷ base, is shown when live data is loaded; its history has no free source.</p>
-    <p><b>What is left out.</b> Total public debt stands in for the stock of Treasury bills, which is the part issuers actually hold. The market-cap series counts tokenised RWAs and ABS only in part, so as they grow V understates what the base carries. Dollars that bought coins directly, or through ETFs, never became stablecoins and are not in the base. Read V as a ratio, not as a law.</p>
+    <p><b>What is left out.</b> Stablecoins are not the only general equivalent. Fiat buys crypto directly and through ETFs, and those dollars never became stablecoins, so they are not in the base. Stablecoins are also spent outside crypto, so not all of the base is at work in it. The RWA figure in the Wall Street table is a narrow count from one source and is a memo: no forecast uses it. Read V as a ratio, not as a law.</p>
     <p><b>Macro regression.</b> <code>ln(crypto) = a + b1·ln(M2) + b2·ln(US equity cap)</code>, fitted on <span id="n-obs"></span> quarters: <span id="coefs"></span>. The real-time Z-score refits it for each quarter on earlier quarters only. Everything is computed in your browser from the same inputs as the workbook. See <a href="docs.html?doc=methodology">Methodology</a>.</p>
   </div>
 </main>
@@ -154,7 +154,7 @@
   const fm = CryptoModel.flow(MODEL_DATA, MODEL_DATA.params.v_lookback), F = fm.latest, VS = fm.stats, dm = CryptoModel.drivers(MODEL_DATA);
   const round = (v, s) => +(Math.round(v / s) * s).toFixed(4);
   const m2Trend = round(trend.m2 * 100, 0.5), BT = CryptoModel.baseTrend(fm, MODEL_DATA.params.treasury_backing);
-  const debtTrend = round(BT.debt * 100, 0.5), baseTrend = Math.max(-30, Math.min(80, Math.round(BT.growth * 100)));
+  const debtTrend = Math.max(-10, Math.min(30, round(BT.bills * 100, 0.5))), baseTrend = Math.max(-30, Math.min(80, Math.round(BT.growth * 100)));
 
   const state = {
     model: "drv", live: null,
@@ -221,7 +221,7 @@
                                 stable: s && s.length ? s[s.length - 1].totalCirculatingUSD.peggedUSD / 1e12 : F.base };
       $("dom").value = lv.dom.toFixed(1); $("supply").value = lv.supply.toFixed(2);
       $("live-hint").textContent = `Live at ${new Date().toLocaleString()}: total market cap ${fmt.t2(lv.cap)}, Bitcoin ${fmt.usd(lv.price)}, dominance ${lv.dom.toFixed(1)}%, ` +
-        `stablecoins ${B(lv.stable)}${s ? "" : " (quarter-end value; DefiLlama not reachable)"}, 24-hour trading volume ${B(lv.volume)}. M2, GDP and public debt are still those of ${F.quarter}. Scenarios still start from ${F.quarter}.`;
+        `stablecoins ${B(lv.stable)}${s ? "" : " (quarter-end value; DefiLlama not reachable)"}, 24-hour trading volume ${B(lv.volume)}. M2, GDP and Treasury bills are still those of ${F.quarter}. Scenarios still start from ${F.quarter}.`;
       $("live").textContent = "Refresh live data";
     } catch (err) {
       $("live-hint").textContent = "Could not reach CoinGecko (offline, blocked or rate-limited). Set the two values by hand.";
@@ -258,8 +258,8 @@
 
     if (flowMode) {
       proj = drvMode
-        ? CryptoModel.projectDrivers(dm, fm, { m2Growth: dv.m2 / 100, debtGrowth: dv.db / 100, eqGrowth: dv.eq / 100, useGrowth: dv.ad / 100, backing: bk, horizon: dv.hz })
-        : CryptoModel.projectFlow(fm, { baseGrowth: f.bg / 100, vEnd: f.v, horizon: f.hz, m2Growth: m2Trend / 100, debtGrowth: debtTrend / 100 });
+        ? CryptoModel.projectDrivers(dm, fm, { m2Growth: dv.m2 / 100, billsGrowth: dv.db / 100, eqGrowth: dv.eq / 100, useGrowth: dv.ad / 100, backing: bk, horizon: dv.hz })
+        : CryptoModel.projectFlow(fm, { baseGrowth: f.bg / 100, vEnd: f.v, horizon: f.hz, m2Growth: m2Trend / 100, billsGrowth: debtTrend / 100 });
       end = proj[proj.length - 1];
       const H = fm.rows, nh = H.length, pad = new Array(nh - 1).fill(null), fut = proj.map(() => null), xs = H.map(x => x.quarter).concat(proj.map(p => p.quarter));
       Charts.line($("main-chart"), {
@@ -278,10 +278,10 @@
       Charts.bars($("v-chart"), { label: "Crypto V", name: "Crypto V", x: xs, height: 230, values: H.map(x => x.v).concat(proj.map(p => p.v)),
         color: (v, i) => fade(i, css("--fair")), refs: [{ value: VS.med, label: "median of last " + VS.lookback + " quarters" }], yFormat: (v, long) => long ? X(v) : v.toFixed(0) });
 
-      const LE = CryptoModel.legs(end.base, end.m2, end.debt, bk), L0 = CryptoModel.legs(F.base, F.m2, F.debt, bk);
+      const LE = CryptoModel.legs(end.base, end.m2, end.bills, bk), L0 = CryptoModel.legs(F.base, F.m2, F.bills, bk);
       $("result").innerHTML =
         kpi(`Stablecoin base, ${end.quarter}`, B(end.base), `${fmt.pct(end.base / F.base - 1)} vs today · ${SH(end.base / end.m2)} of M2`) +
-        kpi("Locked bonds", B(LE.bonds), `${LE.bonds >= L0.bonds ? "+" : "−"}${B(Math.abs(LE.bonds - L0.bonds))} of Treasury demand vs today · ${SH(LE.bondShare)} of public debt`) +
+        kpi("Locked bonds", B(LE.bonds), `${LE.bonds >= L0.bonds ? "+" : "−"}${B(Math.abs(LE.bonds - L0.bonds))} of Treasury demand vs today · ${(LE.bondShare * 100).toFixed(1)}% of Treasury bills`) +
         kpi("Locked USD", B(LE.cash), LE.cash > 0 ? `cash reserves · ${SH(LE.cashShare)} of M2` : "none: the base rests on bonds alone") +
         kpi("Crypto V", X(end.v), end.v < VS.q1 ? "below its usual range" : end.v > VS.q3 ? "above its usual range" : "inside its usual range") +
         kpi(`Crypto market cap, ${end.quarter}`, fmt.t2(end.path), `${fmt.pct(end.path / F.actual - 1)} vs ${F.quarter} actual`, end.path >= F.actual ? "good-t" : "bad-t") +
@@ -290,9 +290,9 @@
       cases = drvMode ? [[`Actual, ${F.quarter}`, F.actual], [`Scenario, ${end.quarter}`, end.path], ["  scenario − typical error", end.errLo], ["  scenario + typical error", end.errHi]]
         : [[`Actual, ${F.quarter}`, F.actual], [`Scenario, ${end.quarter}`, end.path], [`  at V = ${X(VS.q1)} (lower quartile)`, end.lo],
                [`  at V = ${X(VS.med)} (median)`, end.implied], [`  at V = ${X(VS.q3)} (upper quartile)`, end.hi]];
-      $("proj-table").innerHTML = "<tr><th>Quarter</th><th>M2</th><th>Public debt</th><th>Stablecoin base</th><th>Locked bonds</th><th>Locked USD</th><th>Crypto V</th><th>Crypto market cap</th><th>At usual V</th><th>Implied BTC price</th></tr>" +
+      $("proj-table").innerHTML = "<tr><th>Quarter</th><th>M2</th><th>Treasury bills</th><th>Stablecoin base</th><th>Locked bonds</th><th>Locked USD</th><th>Crypto V</th><th>Crypto market cap</th><th>At usual V</th><th>Implied BTC price</th></tr>" +
         [Object.assign({}, F, { quarter: F.quarter + " (actual)", path: F.actual })].concat(proj).map(p =>
-          `<tr><td>${p.quarter}</td><td>${fmt.t2(p.m2)}</td><td>${fmt.t2(p.debt)}</td><td>${B(p.base)}</td><td>${B(p.base * bk)}</td><td>${B(p.base * (1 - bk))}</td><td>${X(p.v)}</td><td><b>${fmt.t2(p.path)}</b></td><td>${fmt.t2(p.lo)} – ${fmt.t2(p.hi)}</td><td>${fmt.usd(btc(p.path).price)}</td></tr>`).join("");
+          `<tr><td>${p.quarter}</td><td>${fmt.t2(p.m2)}</td><td>${fmt.t2(p.bills)}</td><td>${B(p.base)}</td><td>${B(p.base * bk)}</td><td>${B(p.base * (1 - bk))}</td><td>${X(p.v)}</td><td><b>${fmt.t2(p.path)}</b></td><td>${fmt.t2(p.lo)} – ${fmt.t2(p.hi)}</td><td>${fmt.usd(btc(p.path).price)}</td></tr>`).join("");
     } else {
       proj = CryptoModel.project(model, { m2Growth: r.m2 / 100, eqGrowth: r.eq / 100, horizon: r.hz, closure: r.cl / 100 });
       end = proj[proj.length - 1];
@@ -331,15 +331,15 @@
     T.map((m, j) => `<tr><td>${j === 2 ? "<b>" + m.name + "</b>" : m.name}</td><td>${pc(m.rmseC)}</td><td>${j ? rel(m.ratioC) : "–"}</td><td>${pc(m.hitC)}</td><td>${pc(m.rmseU)}</td><td>${j ? rel(m.ratioU) : "–"}</td><td>${pc(m.hitU)}</td></tr>`).join("");
   const D = T[2];
   $("tour-note").textContent = `One-quarter-ahead forecasts of crypto market cap for the last ${dm.forecasts} quarters, each made with a model fitted only on earlier quarters. ` +
-    `Typical error is the root-mean-square error in log terms. Told where equities, M2 and public debt went, the driver model was ${D.ratioC < 1 ? Math.round((1 - D.ratioC) * 100) + "% more accurate than" : Math.round((D.ratioC - 1) * 100) + "% less accurate than"} assuming no change` +
+    `Typical error is the root-mean-square error in log terms. Told where equities, M2 and Treasury bills went, the driver model was ${D.ratioC < 1 ? Math.round((1 - D.ratioC) * 100) + "% more accurate than" : Math.round((D.ratioC - 1) * 100) + "% less accurate than"} assuming no change` +
     ` and called the direction in ${pc(D.hitC)} of quarters (the market rose in ${pc(dm.upShare)} of them). Not told, it was ${Math.abs(D.ratioU - 1) < 0.03 ? "no better than" : D.ratioU < 1 ? "slightly better than" : "worse than"} assuming no change. ` +
     `So the model is a way to translate a view on the Fed, the Treasury and Wall Street into crypto market cap, not a way to know that view in advance. A quarter's typical error of about ${pc(D.rmseC)} is large, and the ranking of methods changes with the test window.`;
   $("drv-coefs").textContent = `β = ${dm.beta.toFixed(2)} and κ = ${dm.kappa.toFixed(2)} a quarter, average V = ${X(dm.vbar)}`;
   $("deq-hint").textContent = `Moves crypto V: 1% on equities has gone with about ${dm.beta.toFixed(1)}% on V, and V closes about ${Math.round(dm.kappa * 100)}% of its distance to its average (${X(dm.vbar)}) each quarter.`;
   const gp = v => fmt.pct(v, 1).replace("+", "");
-  $("ddb-hint").textContent = `Moves the bond leg: the supply of Treasuries the peg is held in. Public debt grew ${gp(BT.debt)} over the last year.`;
+  $("ddb-hint").textContent = `Moves the bond leg: the supply of short-term Treasuries the peg is held in. Bills outstanding grew ${gp(BT.bills)} over the last year.`;
   $("dad-hint").textContent = `At 0 the base grows only as fast as its two legs. Over the last year the base grew ${gp(BT.growth)}: ${gp(BT.legs)} from the legs and ${gp(BT.use)} from use. Raise it for wider use in trading, payments, RWAs and ABS.`;
-  $("bg-hint").textContent = `Now ${B(F.base)}. It grew ${gp(BT.growth)} over the last year. M2 and public debt play no part in this mode.`;
+  $("bg-hint").textContent = `Now ${B(F.base)}. It grew ${gp(BT.growth)} over the last year. M2 and Treasury bills play no part in this mode.`;
   $("use-coefs").textContent = `${gp(BT.growth)}, against ${gp(BT.legs)} for the two legs together`;
 
   // ---- regression signal history (independent of the scenario)
