@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docs · Crypto Macro Fair-Value Model</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap docs">
+  <aside id="toc"></aside>
+  <article class="md" id="doc"></article>
+</main>
+<script src="data/model-data.js"></script>
+<script src="data/docs.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  "use strict";
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const byPath = Object.fromEntries(DOCS.map(d => [d.path, d.slug]));
+  const slugify = s => s.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+
+  function link(text, href, from) {
+    if (/^(https?:|mailto:)/.test(href)) return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+    if (href.startsWith("#")) return `<a href="${href}">${text}</a>`;
+    const [file, hash] = href.split("#");
+    const base = from.includes("/") ? from.slice(0, from.lastIndexOf("/") + 1) : "";
+    const parts = [];
+    (base + file).split("/").forEach(p => { if (p === "..") parts.pop(); else if (p && p !== ".") parts.push(p); });
+    const path = parts.join("/");
+    if (byPath[path]) return `<a href="docs.html?doc=${byPath[path]}${hash ? "#" + hash : ""}">${text}</a>`;
+    if (path.endsWith(".xlsx")) return `<a href="downloads/${path.split("/").pop()}" download>${text}</a>`;
+    if (path.startsWith("site/")) return `<a href="${path.slice(5)}">${text}</a>`;
+    return text;                                   // a file that is not part of the site
+  }
+
+  function inline(s, from) {
+    const codes = [];
+    s = esc(s).replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t, h) => link(t, h, from))
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>").replace(/(^|[\s(])\*([^*\s][^*]*)\*/g, "$1<i>$2</i>")
+      .replace(/(^|\s)(https?:\/\/[^\s<]+[^\s<.,)])/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codes[+i]}</code>`);
+  }
+
+  function render(md, from) {
+    const lines = md.split("\n"), out = [];
+    let i = 0;
+    const cells = l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim());
+    while (i < lines.length) {
+      const l = lines[i];
+      if (/^```/.test(l)) {
+        const buf = [];
+        for (i++; i < lines.length && !/^```/.test(lines[i]); i++) buf.push(lines[i]);
+        out.push(`<pre><code>${esc(buf.join("\n"))}</code></pre>`); i++;
+      } else if (/^#{1,4} /.test(l)) {
+        const n = l.match(/^#+/)[0].length, t = l.slice(n + 1);
+        out.push(`<h${n} id="${slugify(t)}">${inline(t, from)}</h${n}>`); i++;
+      } else if (/^\|/.test(l) && /^\|[\s:|-]+\|?\s*$/.test(lines[i + 1] || "")) {
+        const head = cells(l), rows = [];
+        for (i += 2; i < lines.length && /^\|/.test(lines[i]); i++) rows.push(cells(lines[i]));
+        out.push("<table><tr>" + head.map(c => `<th>${inline(c, from)}</th>`).join("") + "</tr>" +
+          rows.map(r => "<tr>" + r.map(c => `<td>${inline(c, from)}</td>`).join("") + "</tr>").join("") + "</table>");
+      } else if (/^\s*([-*]|\d+\.) /.test(l)) {
+        const ordered = /^\s*\d+\./.test(l), items = [];
+        for (; i < lines.length && (/^\s*([-*]|\d+\.) /.test(lines[i]) || (/^\s{2,}\S/.test(lines[i]) && items.length)); i++) {
+          if (/^\s*([-*]|\d+\.) /.test(lines[i]) && !/^\s{2,}/.test(lines[i])) items.push(lines[i].replace(/^\s*([-*]|\d+\.) /, ""));
+          else items[items.length - 1] += (/^\s*([-*]|\d+\.) /.test(lines[i]) ? "<br>• " + lines[i].replace(/^\s*([-*]|\d+\.) /, "") : " " + lines[i].trim());
+        }
+        out.push(`<${ordered ? "ol" : "ul"}>` + items.map(t => `<li>${inline(t, from).replace(/&lt;br&gt;/g, "<br>")}</li>`).join("") + `</${ordered ? "ol" : "ul"}>`);
+      } else if (/^> ?/.test(l)) {
+        const buf = [];
+        for (; i < lines.length && /^> ?/.test(lines[i]); i++) buf.push(lines[i].replace(/^> ?/, ""));
+        out.push(`<blockquote>${inline(buf.join(" "), from)}</blockquote>`);
+      } else if (!l.trim()) { i++; } else {
+        const buf = [];
+        for (; i < lines.length && lines[i].trim() && !/^(#{1,4} |```|\||> ?|\s*([-*]|\d+\.) )/.test(lines[i]); i++) buf.push(lines[i]);
+        out.push(`<p>${inline(buf.join(" "), from)}</p>`);
+      }
+    }
+    return out.join("\n");
+  }
+
+  const slug = new URLSearchParams(location.search).get("doc") || DOCS[0].slug;
+  const doc = DOCS.find(d => d.slug === slug) || DOCS[0];
+  document.getElementById("toc").innerHTML = DOCS.map(d => `<a href="docs.html?doc=${d.slug}"${d === doc ? ' aria-current="page"' : ""}>${d.title}</a>`).join("");
+  document.getElementById("doc").innerHTML = render(doc.md, doc.path);
+  document.title = doc.title + " · Crypto Macro Fair-Value Model";
+  if (location.hash) { const t = document.getElementById(location.hash.slice(1)); if (t) t.scrollIntoView(); }
+})();
+</script>
+</body>
+</html>

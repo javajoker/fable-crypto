@@ -8,8 +8,8 @@ compares them with the values Excel last calculated and saved in the workbook.
     python3 scripts/check_model.py [path/to/workbook.xlsx]
 
 Exit code 0 = everything matches, 1 = at least one mismatch.
-Needs only `openpyxl`. The workbook must have been saved by Excel or LibreOffice
-after its last change, otherwise there are no calculated values to compare.
+Needs only `openpyxl`. If the workbook was last saved by a tool that does not calculate
+formulas (such as add_quarter.py), a temporary copy is calculated with LibreOffice.
 """
 import math
 import sys
@@ -53,6 +53,16 @@ def sign(v):
 
 
 wb = openpyxl.load_workbook(PATH, data_only=True)
+if not isinstance(wb["Params"]["C19"].value, (int, float)):
+    # Saved by a tool that does not calculate (e.g. add_quarter.py). Let LibreOffice calculate a temp copy.
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent))
+    from wb import recalculated_copy
+    copy_path = recalculated_copy(PATH)
+    if copy_path is None:
+        sys.exit("The workbook has no calculated values and LibreOffice was not found.\n"
+                 "Open it in Excel, save, and run this again.")
+    print(f"(no calculated values in the file; checking a LibreOffice-calculated copy)\n")
+    wb = openpyxl.load_workbook(copy_path, data_only=True)
 M, P, B = wb["Model"], wb["Params"], wb["Backtest"]
 
 scen = max(c.row for c in M["B"] if isinstance(c.value, str) and "(scenario)" in c.value)

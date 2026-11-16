@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecast scenarios · Crypto Macro Fair-Value Model</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>How much USD can become crypto market cap?</h1>
+  <p class="lede">Follow the dollars: of all the USD in circulation, some is free to move, part of that gets locked into the crypto market, and trading multiplies it into market cap. The same locked dollars are lent on to the US government as Treasury collateral. Set each step and see where total crypto and Bitcoin end up.</p>
+
+  <div class="callout"><b>Read this first.</b> This is a scenario tool, not a prediction. It turns a view on the Fed and Wall Street into a crypto market cap; it cannot supply the view. Tested out of sample, the model beats "no change" only when told where equities went (<a href="#tour">see the test</a>), and the regression cross-check has shown no timing skill (<span id="bt-inline"></span>).</div>
+
+  <h2 style="margin-top:22px">The chain today <span class="muted small" id="chain-q"></span></h2>
+  <section class="grid chain" id="chain"></section>
+
+  <div class="panel controls" style="margin-top:14px;display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:6px 22px;align-items:center">
+    <div><label style="margin-top:0">Stablecoin reserves held in US Treasuries <span id="bk-v"></span></label>
+    <input type="range" id="bk" min="40" max="100" step="5" value="75"></div>
+    <div class="hint">An assumption, not data: there is no free series for reserve composition. Check the issuers' reserve reports and set it. It changes the Treasury figures only, never the market cap.</div>
+  </div>
+
+  <h2>Scenario</h2>
+  <div class="presets" id="models" style="margin-bottom:12px">
+    <button data-m="drv">Driver model: the Fed and Wall Street move the chain</button>
+    <button data-m="flow">Set lock-in and V yourself</button>
+    <button data-m="reg">Cross-check: macro regression</button>
+  </div>
+  <div class="grid two">
+    <div class="panel">
+      <div id="main-chart"></div>
+      <div class="toggle" style="margin-top:8px"><label><input type="checkbox" id="log"> Log scale</label></div>
+    </div>
+
+    <div class="panel controls" id="ctl-drv">
+      <h3>Assumptions</h3>
+      <div class="presets" id="presets-drv"></div>
+      <label>The Fed: M2 growth, per year <span id="dm2-v"></span></label>
+      <input type="range" id="dm2" min="-5" max="15" step="0.5">
+      <div class="hint">Moves flowing USD, and locked USD with it.</div>
+      <label>Wall Street: US equity market cap growth, per year <span id="deq-v"></span></label>
+      <input type="range" id="deq" min="-40" max="40" step="1">
+      <div class="hint" id="deq-hint"></div>
+      <label>Lock-in share of M2, change per year <span id="dsd-v"></span></label>
+      <input type="range" id="dsd" min="-0.3" max="0.5" step="0.01">
+      <div class="hint" id="dsd-hint"></div>
+      <label>Horizon <span id="dhz-v"></span></label>
+      <input type="range" id="dhz" min="1" max="12" step="1">
+    </div>
+
+    <div class="panel controls" id="ctl-flow" hidden>
+      <h3>Assumptions</h3>
+      <div class="presets" id="presets-flow"></div>
+      <label>Flowing USD: M2 growth, per year <span id="fm2-v"></span></label>
+      <input type="range" id="fm2" min="-5" max="15" step="0.5">
+      <label>Lock-in: share of M2 locked in crypto at the horizon <span id="sh-v"></span></label>
+      <input type="range" id="sh" min="0.3" max="4" step="0.01">
+      <div class="hint" id="sh-hint"></div>
+      <label>Crypto V at the horizon <span id="v-v"></span></label>
+      <input type="range" id="v" min="3" max="35" step="0.1">
+      <div class="hint" id="v-hint"></div>
+      <label>Horizon <span id="fhz-v"></span></label>
+      <input type="range" id="fhz" min="1" max="12" step="1">
+    </div>
+
+    <div class="panel controls" id="ctl-reg" hidden>
+      <h3>Assumptions</h3>
+      <div class="presets" id="presets-reg"></div>
+      <label>M2 growth, per year <span id="m2-v"></span></label>
+      <input type="range" id="m2" min="-5" max="15" step="0.5">
+      <label>US equity market cap growth, per year <span id="eq-v"></span></label>
+      <input type="range" id="eq" min="-40" max="40" step="1">
+      <label>Horizon <span id="hz-v"></span></label>
+      <input type="range" id="hz" min="1" max="12" step="1">
+      <label>Share of today's gap that closes each quarter <span id="cl-v"></span></label>
+      <input type="range" id="cl" min="0" max="50" step="5">
+      <div class="hint">At 0% the gap between actual and fair value stays as it is. That is the setting the evidence supports: there is no statistical sign that gaps close.</div>
+    </div>
+  </div>
+
+  <section class="grid kpis" id="result" style="margin-top:14px"></section>
+
+  <div id="flow-extra">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-top:14px">
+      <div class="panel"><h3>Locked USD: stablecoin supply, $ billions</h3><div id="locked-chart"></div></div>
+      <div class="panel"><h3>Crypto V: market cap ÷ locked USD</h3><div id="v-chart"></div></div>
+    </div>
+  </div>
+
+  <h2>The wider frame <span class="muted small" id="macro-q"></span></h2>
+  <p class="muted" style="max-width:780px;margin-top:-4px">The chain does not run on its own. The Fed sets how much money there is and what it costs, Wall Street sets the appetite for risk that drives crypto V, and the Treasury market is where the locked dollars end up.</p>
+  <section class="grid lenses" id="lenses"></section>
+
+  <h2>Bitcoin under this scenario</h2>
+  <div class="grid two">
+    <div class="panel scroll">
+      <table id="btc-table"></table>
+      <p class="small muted" style="margin:10px 0 0">The model has no Bitcoin-specific data. These figures are total crypto market cap × your dominance assumption ÷ supply. Supply is held constant over the horizon (it grows by under 1% a year).</p>
+    </div>
+    <div class="panel controls">
+      <h3>Bitcoin assumptions</h3>
+      <label>Bitcoin share of crypto market cap <span id="dom-v"></span></label>
+      <input type="range" id="dom" min="30" max="75" step="0.5" value="58">
+      <label>Bitcoin supply, millions</label>
+      <input type="number" id="supply" min="19" max="21" step="0.01" value="20.10">
+      <div class="hint" id="live-hint">Both are placeholders until you load live values. Loading sends read-only requests to the public CoinGecko and DefiLlama APIs and nothing else.</div>
+      <p style="margin:12px 0 0"><button id="live">Load live market data</button></p>
+    </div>
+  </div>
+
+  <h2>Projection by quarter</h2>
+  <div class="panel scroll"><table id="proj-table"></table></div>
+
+  <h2 id="tour">How good is the forecast?</h2>
+  <div class="panel scroll">
+    <table id="tour-table"></table>
+    <p class="small muted" id="tour-note" style="margin:10px 0 0"></p>
+  </div>
+
+  <h2>Cross-check: has the regression signal worked?</h2>
+  <div class="grid two">
+    <div class="panel"><div id="z-chart"></div></div>
+    <div class="panel scroll">
+      <table id="bt-table"></table>
+      <p class="small muted" id="bt-note" style="margin:10px 0 0"></p>
+    </div>
+  </div>
+
+  <h2>How the numbers are made</h2>
+  <div class="panel md">
+    <p><b>Driver model.</b> Locked USD = lock-in share × M2, so the Fed moves it through the money stock. Crypto V moves with Wall Street and is pulled back toward its own average: <code>Δln V = β · Δln(US equity cap) + κ · (average ln V − last ln V)</code>, with <span id="drv-coefs"></span>. Market cap = V × locked USD. The band around the scenario path is the model's typical one-quarter error, widened with the square root of the horizon. It was picked as the most stable of about twenty candidate forms, which itself flatters it a little.</p>
+    <p><b>Liquidity flow.</b> Flowing USD is M2. Free USD is the part not needed to turn the real economy over at its normal pace: <code>M2 − GDP ÷ V*</code>, with V* = <span id="vstar"></span> (the 2015–2019 velocity of M2). Locked USD is the supply of USD stablecoins: dollars that entered the crypto market through the primary market, by minting, and stay there as dollars. Crypto V is <code>market cap ÷ locked USD</code>, the multiple that secondary-market trading puts on each locked dollar. The scenario sets <code>market cap = V × lock-in share × M2</code>. The shaded range uses the middle half of V over the last <span id="lookback"></span> quarters.</p>
+    <p><b>The dual lens.</b> A dollar that buys a stablecoin does not leave the banking system. The issuer spends it on Treasury bills, so the cash goes to whoever sold the bills and M2 is unchanged. What is created is a second claim: a dollar-token that circulates inside the crypto market, backed by a Treasury bill outside it. Locked USD therefore shows up twice, as liquidity inside crypto and as demand for US government debt. The Treasury figures are locked USD × the backing share you set.</p>
+    <p><b>Two meanings of V.</b> Crypto V here is market cap ÷ locked USD, the counterpart of M2 velocity with market value in the place of GDP. Turnover velocity, trading volume ÷ locked USD, is shown when live data is loaded; its history has no free source.</p>
+    <p><b>What this measure of locked USD leaves out.</b> Stablecoins are the narrowest count: dollars that bought coins directly, or through ETFs, also entered but are not in it. So V here is larger than the true price impact of a dollar of inflow, and it should be read as a ratio, not as a law.</p>
+    <p><b>Macro regression.</b> <code>ln(crypto) = a + b1·ln(M2) + b2·ln(US equity cap)</code>, fitted on <span id="n-obs"></span> quarters: <span id="coefs"></span>. The real-time Z-score refits it for each quarter on earlier quarters only. Everything is computed in your browser from the same inputs as the workbook. See <a href="docs.html?doc=methodology">Methodology</a>.</p>
+  </div>
+</main>
+
+<script src="data/model-data.js"></script>
+<script src="assets/model.js"></script>
+<script src="assets/charts.js"></script>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id), { fmt, signalClass, css } = Site;
+  const { B, X, SH, kpi } = Site;
+  const model = CryptoModel.compute(MODEL_DATA), L = model.latest, trend = CryptoModel.trailingGrowth(model), bt = model.backtest;
+  const fm = CryptoModel.flow(MODEL_DATA, 16), F = fm.latest, VS = fm.stats, dm = CryptoModel.drivers(MODEL_DATA);
+  const round = (v, s) => +(Math.round(v / s) * s).toFixed(4);
+  const m2Trend = round(trend.m2 * 100, 0.5);
+
+  const state = {
+    model: "drv", live: null,
+    drv: { m2: m2Trend, eq: round(trend.equity * 100, 1), sd: 0, hz: 4, preset: "Recent trend" },
+    flow: { m2: m2Trend, sh: round(F.share * 100, 0.01), v: round(F.v, 0.1), hz: 4, preset: "Hold today's values" },
+    reg: { m2: m2Trend, eq: round(trend.equity * 100, 1), hz: 4, cl: 0, preset: "Recent trend" },
+  };
+  const shareTrendAt = hz => round((F.share + fm.shareTrend * hz) * 100, 0.01);
+  const flowPresets = {
+    "Hold today's values": () => ({ sh: round(F.share * 100, 0.01), v: round(F.v, 0.1) }),
+    "V back to its median": () => ({ sh: round(F.share * 100, 0.01), v: round(VS.med, 0.1) }),
+    "Lock-in keeps rising": () => ({ sh: shareTrendAt(state.flow.hz), v: round(F.v, 0.1) }),
+    "Risk-on": () => ({ sh: shareTrendAt(state.flow.hz), v: round(VS.q3, 0.1) }),
+    "Risk-off": () => ({ sh: round(F.share * 90, 0.01), v: round(VS.min, 0.1) }),
+  };
+  const regPresets = {
+    "Recent trend": { m2: m2Trend, eq: round(trend.equity * 100, 1) }, "Soft landing": { m2: 5, eq: 8 }, "Risk-on": { m2: 7, eq: 18 },
+    "Equity bear market": { m2: 3, eq: -25 }, "Flat": { m2: 0, eq: 0 },
+  };
+
+  // ---- static text
+  $("bt-inline").textContent = `correlation with the next quarter's return ${fmt.num(bt.corr)}, hit rate ${Math.round(bt.hit * 100)}% over ${bt.n} quarters`;
+  $("n-obs").textContent = model.n; $("vstar").textContent = MODEL_DATA.params.v_star; $("lookback").textContent = VS.lookback;
+  $("coefs").textContent = `a = ${fmt.num(model.coef.a)}, b1 = ${fmt.num(model.coef.b1)}, b2 = ${fmt.num(model.coef.b2)}; R² = ${model.coef.r2.toFixed(2)}, SE = ${model.coef.se.toFixed(2)} log points`;
+  $("sh-hint").textContent = `Now ${SH(F.share)} of M2, or ${Math.round(F.shareFree * 100)}% of free USD. It has moved by ${fmt.num(fm.shareTrend * 100, 3)} points a quarter over the last two years.`;
+  $("v-hint").textContent = `Now ${X(F.v)}. Over the last ${VS.lookback} quarters: middle half ${X(VS.q1)} to ${X(VS.q3)}, median ${X(VS.med)}, extremes ${X(VS.min)} and ${X(VS.max)}.`;
+
+  function renderChain() {
+    const backing = +$("bk").value / 100;
+    $("bk-v").textContent = Math.round(backing * 100) + "%";
+    $("chain-q").textContent = state.live ? "· live" : "· " + F.quarter;
+    $("chain").innerHTML = Site.chain(fm, backing, state.live);
+    const m = CryptoModel.macro(MODEL_DATA, backing);
+    $("macro-q").textContent = "· " + m.quarter;
+    $("lenses").innerHTML = Site.lenses(m);
+  }
+
+  // ---- controls
+  $("models").addEventListener("click", e => { if (e.target.dataset.m) { state.model = e.target.dataset.m; render(); } });
+  $("presets-flow").innerHTML = Object.keys(flowPresets).map(p => `<button data-p="${p}">${p}</button>`).join("");
+  $("presets-reg").innerHTML = Object.keys(regPresets).map(p => `<button data-p="${p}">${p}</button>`).join("");
+  $("presets-drv").innerHTML = Object.keys(regPresets).map(p => `<button data-p="${p}">${p}</button>`).join("");
+  $("presets-drv").addEventListener("click", e => { const p = regPresets[e.target.dataset.p]; if (p) { Object.assign(state.drv, p, { preset: e.target.dataset.p }); render(); } });
+  $("presets-flow").addEventListener("click", e => { const p = flowPresets[e.target.dataset.p]; if (p) { Object.assign(state.flow, p(), { preset: e.target.dataset.p }); render(); } });
+  $("presets-reg").addEventListener("click", e => { const p = regPresets[e.target.dataset.p]; if (p) { Object.assign(state.reg, p, { preset: e.target.dataset.p }); render(); } });
+  [["dm2", "drv", "m2"], ["deq", "drv", "eq"], ["dsd", "drv", "sd"], ["dhz", "drv", "hz"], ["fm2", "flow", "m2"], ["sh", "flow", "sh"], ["v", "flow", "v"], ["fhz", "flow", "hz"], ["m2", "reg", "m2"], ["eq", "reg", "eq"], ["hz", "reg", "hz"], ["cl", "reg", "cl"]]
+    .forEach(([id, m, key]) => $(id).addEventListener("input", e => {
+      state[m][key] = +e.target.value;
+      if (key === "hz" && m === "flow" && flowPresets[state.flow.preset]) Object.assign(state.flow, flowPresets[state.flow.preset]());
+      else if (key !== "hz" && key !== "cl" && key !== "sd" && !(m === "flow" && key === "m2")) state[m].preset = null;
+      render();
+    }));
+  ["log", "dom", "supply", "bk"].forEach(id => $(id).addEventListener("input", render));
+
+  $("live").addEventListener("click", async () => {
+    $("live").disabled = true; $("live").textContent = "Loading…";
+    try {
+      const [g, b, s] = await Promise.all([
+        fetch("https://api.coingecko.com/api/v3/global").then(r => r.json()),
+        fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_market_cap=true").then(r => r.json()),
+        fetch("https://stablecoins.llama.fi/stablecoincharts/all").then(r => r.json()).catch(() => null),
+      ]);
+      const lv = state.live = { cap: g.data.total_market_cap.usd / 1e12, volume: g.data.total_volume.usd / 1e12, dom: g.data.market_cap_percentage.btc, price: b.bitcoin.usd,
+                                supply: b.bitcoin.usd_market_cap / b.bitcoin.usd / 1e6,
+                                stable: s && s.length ? s[s.length - 1].totalCirculatingUSD.peggedUSD / 1e12 : F.locked };
+      $("dom").value = lv.dom.toFixed(1); $("supply").value = lv.supply.toFixed(2);
+      $("live-hint").textContent = `Live at ${new Date().toLocaleString()}: total market cap ${fmt.t2(lv.cap)}, Bitcoin ${fmt.usd(lv.price)}, dominance ${lv.dom.toFixed(1)}%, ` +
+        `stablecoins ${B(lv.stable)}${s ? "" : " (quarter-end value; DefiLlama not reachable)"}, 24-hour trading volume ${B(lv.volume)}. M2 and GDP are still those of ${F.quarter}. Scenarios still start from ${F.quarter}.`;
+      $("live").textContent = "Refresh live data";
+    } catch (err) {
+      $("live-hint").textContent = "Could not reach CoinGecko (offline, blocked or rate-limited). Set the two values by hand.";
+      $("live").textContent = "Try again";
+    }
+    $("live").disabled = false;
+    render();
+  });
+
+  // ---- render
+  function render() {
+    const drvMode = state.model === "drv", flowMode = state.model !== "reg", f = state.flow, r = state.reg, dv = state.drv;
+    document.querySelectorAll("#models button").forEach(b => b.setAttribute("aria-pressed", b.dataset.m === state.model));
+    $("ctl-drv").hidden = !drvMode; $("ctl-flow").hidden = state.model !== "flow"; $("ctl-reg").hidden = flowMode; $("flow-extra").hidden = !flowMode;
+    document.querySelectorAll("#presets-drv button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === dv.preset));
+    $("dm2").value = dv.m2; $("deq").value = dv.eq; $("dsd").value = dv.sd; $("dhz").value = dv.hz;
+    $("dm2-v").textContent = fmt.pct(dv.m2 / 100, 1); $("deq-v").textContent = fmt.pct(dv.eq / 100); $("dhz-v").textContent = dv.hz + (dv.hz === 1 ? " quarter" : " quarters");
+    $("dsd-v").textContent = (dv.sd > 0 ? "+" : dv.sd < 0 ? "−" : "") + Math.abs(dv.sd).toFixed(2) + " pt";
+    document.querySelectorAll("#presets-flow button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === f.preset));
+    document.querySelectorAll("#presets-reg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.p === r.preset));
+    const q = n => n + (n === 1 ? " quarter" : " quarters");
+    $("fm2").value = f.m2; $("sh").value = f.sh; $("v").value = f.v; $("fhz").value = f.hz;
+    $("fm2-v").textContent = fmt.pct(f.m2 / 100, 1); $("sh-v").textContent = f.sh.toFixed(2) + "%"; $("v-v").textContent = X(f.v); $("fhz-v").textContent = q(f.hz);
+    $("m2").value = r.m2; $("eq").value = r.eq; $("hz").value = r.hz; $("cl").value = r.cl;
+    $("m2-v").textContent = fmt.pct(r.m2 / 100, 1); $("eq-v").textContent = fmt.pct(r.eq / 100); $("hz-v").textContent = q(r.hz); $("cl-v").textContent = r.cl + "%";
+    renderChain();
+
+    const bk = +$("bk").value / 100;
+    const dom = +$("dom").value / 100, supply = +$("supply").value * 1e6;
+    $("dom-v").textContent = (dom * 100).toFixed(1) + "%";
+    const btc = cap => ({ cap: cap * dom, price: cap * dom * 1e12 / supply });
+    const yT = (v, long) => fmt.usdT(v, long);
+    let proj, end, cases;
+
+    if (flowMode) {
+      proj = drvMode
+        ? CryptoModel.projectDrivers(dm, fm, { m2Growth: dv.m2 / 100, eqGrowth: dv.eq / 100, shareDrift: dv.sd / 100, horizon: dv.hz })
+        : CryptoModel.projectFlow(fm, { m2Growth: f.m2 / 100, shareEnd: f.sh / 100, vEnd: f.v, horizon: f.hz });
+      end = proj[proj.length - 1];
+      const H = fm.rows, nh = H.length, pad = new Array(nh - 1).fill(null), fut = proj.map(() => null), xs = H.map(x => x.quarter).concat(proj.map(p => p.quarter));
+      Charts.line($("main-chart"), {
+        label: "Crypto market cap and liquidity-flow scenario", x: xs, log: $("log").checked, split: nh - 1, yFormat: yT,
+        series: [
+          { name: "Actual", color: css("--actual"), values: H.map(x => x.actual).concat(fut) },
+          { name: `Locked USD × median V (${X(VS.med)})`, color: css("--fair"), dot: false, values: H.map(x => x.implied).concat(proj.map(p => p.implied)) },
+          { name: "Crypto market cap, scenario", color: css("--path"), dash: "6 5", values: pad.concat([F.actual], proj.map(p => p.path)) },
+        ],
+        bands: [{ name: `Locked USD × V in its middle half (${X(VS.q1)}–${X(VS.q3)})`, color: css("--band"), lo: H.map(x => x.lo).concat(proj.map(p => p.lo)), hi: H.map(x => x.hi).concat(proj.map(p => p.hi)) }]
+          .concat(drvMode ? [{ name: "Scenario ± typical forecast error", color: css("--pathband"), lo: pad.concat([F.actual], proj.map(p => p.errLo)), hi: pad.concat([F.actual], proj.map(p => p.errHi)) }] : []),
+      });
+      const fade = (i, c) => i >= nh ? css("--path") : c;
+      Charts.bars($("locked-chart"), { label: "Locked USD", name: "Locked USD", x: xs, height: 230, values: H.map(x => x.locked * 1000).concat(proj.map(p => p.locked * 1000)),
+        color: (v, i) => fade(i, css("--actual")), yFormat: (v, long) => long ? "$" + v.toFixed(0) + "B" : v.toFixed(0) });
+      Charts.bars($("v-chart"), { label: "Crypto V", name: "Crypto V", x: xs, height: 230, values: H.map(x => x.v).concat(proj.map(p => p.v)),
+        color: (v, i) => fade(i, css("--fair")), refs: [{ value: VS.med, label: "median of last " + VS.lookback + " quarters" }], yFormat: (v, long) => long ? X(v) : v.toFixed(0) });
+
+      $("result").innerHTML =
+        kpi(`Flowing USD, ${end.quarter}`, fmt.usdT(end.m2, true), `M2, ${fmt.pct(end.m2 / F.m2 - 1, 1)} vs today`) +
+        kpi("Locked USD", B(end.locked), `${SH(end.share)} of M2 · ${fmt.pct(end.locked / F.locked - 1)} vs today`) +
+        kpi("Treasuries behind it", B(end.locked * bk), `${end.locked >= F.locked ? "+" : "−"}${B(Math.abs(end.locked - F.locked) * bk)} of Treasury demand vs today`) +
+        kpi("Crypto V", X(end.v), end.v < VS.q1 ? "below its usual range" : end.v > VS.q3 ? "above its usual range" : "inside its usual range") +
+        kpi(`Crypto market cap, ${end.quarter}`, fmt.t2(end.path), `${fmt.pct(end.path / F.actual - 1)} vs ${F.quarter} actual`, end.path >= F.actual ? "good-t" : "bad-t") +
+        (drvMode ? kpi("± typical forecast error", `${fmt.usdT(end.errLo, true)} – ${fmt.usdT(end.errHi, true)}`, `one-quarter error of ${Math.round(dm.rmse * 100)}%, widened over ${end.h} quarter${end.h > 1 ? "s" : ""}`)
+                 : kpi("Same locked USD at usual V", `${fmt.usdT(end.lo, true)} – ${fmt.usdT(end.hi, true)}`, `V between ${X(VS.q1)} and ${X(VS.q3)}`));
+      cases = drvMode ? [[`Actual, ${F.quarter}`, F.actual], [`Scenario, ${end.quarter}`, end.path], ["  scenario − typical error", end.errLo], ["  scenario + typical error", end.errHi]]
+        : [[`Actual, ${F.quarter}`, F.actual], [`Scenario, ${end.quarter}`, end.path], [`  at V = ${X(VS.q1)} (lower quartile)`, end.lo],
+               [`  at V = ${X(VS.med)} (median)`, end.implied], [`  at V = ${X(VS.q3)} (upper quartile)`, end.hi]];
+      $("proj-table").innerHTML = "<tr><th>Quarter</th><th>M2</th><th>Lock-in share</th><th>Locked USD</th><th>Treasuries held</th><th>Crypto V</th><th>Crypto market cap</th><th>At usual V</th><th>Implied BTC price</th></tr>" +
+        [Object.assign({}, F, { quarter: F.quarter + " (actual)", path: F.actual })].concat(proj).map(p =>
+          `<tr><td>${p.quarter}</td><td>${fmt.t2(p.m2)}</td><td>${SH(p.share)}</td><td>${B(p.locked)}</td><td>${B(p.locked * bk)}</td><td>${X(p.v)}</td><td><b>${fmt.t2(p.path)}</b></td><td>${fmt.t2(p.lo)} – ${fmt.t2(p.hi)}</td><td>${fmt.usd(btc(p.path).price)}</td></tr>`).join("");
+    } else {
+      proj = CryptoModel.project(model, { m2Growth: r.m2 / 100, eqGrowth: r.eq / 100, horizon: r.hz, closure: r.cl / 100 });
+      end = proj[proj.length - 1];
+      const H = model.rows, nh = H.length, pad = new Array(nh - 1).fill(null), fut = proj.map(() => null);
+      Charts.line($("main-chart"), {
+        label: "Crypto market cap, fair value and scenario", x: H.map(x => x.quarter).concat(proj.map(p => p.quarter)), log: $("log").checked, split: nh - 1, yFormat: yT,
+        series: [
+          { name: "Actual", color: css("--actual"), values: H.map(x => x.actual).concat(fut) },
+          { name: "Fair value", color: css("--fair"), values: H.map(x => x.fv).concat(fut), dot: false },
+          { name: "Fair value, scenario", color: css("--fair"), dash: "6 5", values: pad.concat([L.fv], proj.map(p => p.fv)) },
+          { name: "Crypto market cap, scenario", color: css("--path"), dash: "6 5", values: pad.concat([L.actual], proj.map(p => p.path)) },
+        ],
+        bands: [{ name: "Fair value ±1 SE", color: css("--band"), lo: H.map(x => x.lo).concat(proj.map(p => p.lo)), hi: H.map(x => x.hi).concat(proj.map(p => p.hi)) }],
+      });
+      $("result").innerHTML =
+        kpi(`Fair value, ${L.quarter}`, fmt.t2(L.fv), `actual ${fmt.t2(L.actual)}, gap ${fmt.pct(L.gap)} · <span class="pill ${signalClass(L.signal)}">${L.signal}</span>`) +
+        kpi(`Fair value, ${end.quarter}`, fmt.t2(end.fv), `${fmt.pct(end.fv / L.fv - 1)} vs today's fair value`) +
+        kpi("±1 SE range", `${fmt.usdT(end.lo, true)} – ${fmt.usdT(end.hi, true)}`, "the fit's typical miss, not a forecast interval") +
+        kpi(`Crypto market cap, ${end.quarter}`, fmt.t2(end.path), `${fmt.pct(end.path / L.actual - 1)} vs ${L.quarter} actual`, end.path >= L.actual ? "good-t" : "bad-t") +
+        kpi("Gap remaining", fmt.pct(end.gap), r.cl ? `${r.cl}% of the gap closing each quarter` : "gap assumed to persist");
+      cases = [[`Actual, ${L.quarter}`, L.actual], [`Fair value, ${L.quarter}`, L.fv], [`Scenario market cap, ${end.quarter}`, end.path],
+               [`Scenario fair value, ${end.quarter}`, end.fv], ["  fair value −1 SE", end.lo], ["  fair value +1 SE", end.hi]];
+      $("proj-table").innerHTML = "<tr><th>Quarter</th><th>M2</th><th>US equities</th><th>Fair value</th><th>−1 SE</th><th>+1 SE</th><th>Crypto market cap</th><th>Gap</th><th>Implied BTC price</th></tr>" +
+        [{ quarter: L.quarter + " (actual)", m2: L.m2, equity: L.equity, fv: L.fv, lo: L.lo, hi: L.hi, path: L.actual, gap: L.gap }].concat(proj).map(p =>
+          `<tr><td>${p.quarter}</td><td>${fmt.t2(p.m2)}</td><td>${fmt.usdT(p.equity, true)}</td><td>${fmt.t2(p.fv)}</td><td>${fmt.t2(p.lo)}</td><td>${fmt.t2(p.hi)}</td><td><b>${fmt.t2(p.path)}</b></td><td>${fmt.pct(p.gap)}</td><td>${fmt.usd(btc(p.path).price)}</td></tr>`).join("");
+    }
+
+    if (state.live) cases.unshift(["Live", state.live.cap]);
+    $("btc-table").innerHTML = "<tr><th>Case</th><th>Total crypto</th><th>Bitcoin market cap</th><th>Implied Bitcoin price</th></tr>" +
+      cases.map(([name, cap]) => { const b = btc(cap); return `<tr><td>${name}</td><td>${fmt.t2(cap)}</td><td>${fmt.t2(b.cap)}</td><td><b>${fmt.usd(b.price)}</b></td></tr>`; }).join("");
+  }
+
+  // ---- forecast quality: the driver model against simpler rules, one quarter ahead, out of sample
+  const T = dm.table, pc = v => v == null ? "–" : Math.round(v * 100) + "%", rel = v => (v < 1 ? "−" : "+") + Math.abs((v - 1) * 100).toFixed(0) + "%";
+  $("tour-table").innerHTML = "<tr><th>Method</th><th>Typical error, given the equity path</th><th>vs no change</th><th>Direction right</th><th>Typical error, equity path unknown</th><th>vs no change</th><th>Direction right</th></tr>" +
+    T.map((m, j) => `<tr><td>${j === 2 ? "<b>" + m.name + "</b>" : m.name}</td><td>${pc(m.rmseC)}</td><td>${j ? rel(m.ratioC) : "–"}</td><td>${pc(m.hitC)}</td><td>${pc(m.rmseU)}</td><td>${j ? rel(m.ratioU) : "–"}</td><td>${pc(m.hitU)}</td></tr>`).join("");
+  const D = T[2];
+  $("tour-note").textContent = `One-quarter-ahead forecasts of crypto market cap for the last ${dm.forecasts} quarters, each made with a model fitted only on earlier quarters. ` +
+    `Typical error is the root-mean-square error in log terms. Told where equities and M2 went, the driver model was ${D.ratioC < 1 ? Math.round((1 - D.ratioC) * 100) + "% more accurate than" : Math.round((D.ratioC - 1) * 100) + "% less accurate than"} assuming no change` +
+    ` and called the direction in ${pc(D.hitC)} of quarters (the market rose in ${pc(dm.upShare)} of them). Not told, it was ${Math.abs(D.ratioU - 1) < 0.03 ? "no better than" : D.ratioU < 1 ? "slightly better than" : "worse than"} assuming no change. ` +
+    `So the model is a way to translate a view on the Fed and Wall Street into crypto market cap, not a way to know that view in advance. A quarter's typical error of about ${pc(D.rmseC)} is large, and the ranking of methods changes with the test window.`;
+  $("drv-coefs").textContent = `β = ${dm.beta.toFixed(2)} and κ = ${dm.kappa.toFixed(2)} a quarter, average V = ${X(dm.vbar)}`;
+  $("deq-hint").textContent = `Moves crypto V: 1% on equities has gone with about ${dm.beta.toFixed(1)}% on V, and V closes about ${Math.round(dm.kappa * 100)}% of its distance to its average (${X(dm.vbar)}) each quarter.`;
+  $("dsd-hint").textContent = `Now ${SH(F.share)}. At 0 the share holds. Over the last two years it changed by ${fmt.num(fm.shareTrend * 400, 2)} points a year.`;
+
+  // ---- regression signal history (independent of the scenario)
+  const P = MODEL_DATA.params;
+  Charts.bars($("z-chart"), {
+    label: "Real-time Z-score by quarter", name: "Real-time Z-score", x: model.rows.map(x => x.quarter), values: model.rows.map(x => x.rtZ),
+    color: v => v <= P.z_cheap ? css("--good") : v >= P.z_rich ? css("--bad") : css("--actual"),
+    refs: [{ value: P.z_cheap, label: "cheap below " + P.z_cheap }, { value: P.z_rich, label: "rich above +" + P.z_rich }], yFormat: v => fmt.num(v, 1),
+  });
+  const g = (name, x) => `<tr><td>${name}</td><td>${x.n}</td><td>${fmt.pct(x.avg)}</td><td>${x.up == null ? "–" : Math.round(x.up * 100) + "%"}</td></tr>`;
+  $("bt-table").innerHTML = "<tr><th>Signal</th><th>Quarters</th><th>Avg next-quarter return</th><th>Followed by a gain</th></tr>" +
+    g("Cheap vs macro", bt.cheap) + g("Neutral", bt.neutral) + g("Rich vs macro", bt.rich) +
+    `<tr><td><b>All</b></td><td><b>${bt.n}</b></td><td><b>${fmt.pct(bt.avg)}</b></td><td></td></tr>`;
+  $("bt-note").textContent = `Correlation of Z-score with next-quarter return: ${fmt.num(bt.corr)} (t = ${fmt.num(bt.t, 1)}; about ±2.2 is needed to tell it from zero). ` +
+    `Directional hit rate: ${Math.round(bt.hit * 100)}%. Engle–Granger τ = ${fmt.num(model.egTau)}, short of the roughly −3.5 needed to show that gaps close.`;
+
+  render();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => location.reload());
+})();
+</script>
+</body>
+</html>

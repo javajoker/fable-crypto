@@ -1,6 +1,6 @@
 # Data dictionary
 
-Every input series on the `Model` sheet. This mirrors the `Data_Sources` sheet as of 16 November 2026; if the two ever differ, the sheet is the record.
+Every input series on the `Model` sheet, and the one series kept outside the workbook. This mirrors the `Data_Sources` sheet as of 16 November 2026; if the two ever differ, the sheet is the record.
 
 ## Confidence grades
 
@@ -41,6 +41,16 @@ Only M2, US equity market cap and crypto market cap drive the fair value. The po
 | Crypto market cap | CoinGecko quarterly industry reports — https://www.coingecko.com/research | A: 2025 Q1–2026 Q3. B: earlier | 2026 Q3 $2.96T; Q2 = Q3 less the reported $840.1B gain; Q1 = Q2 plus the reported $304.8B loss; 2025 Q4 from "Q3 2026 is 4.0% below start of year" |
 | Gold price | LBMA / World Gold Council — https://www.gold.org/goldhub/data/gold-prices | A: 2026 Q1 ($4,608), 2026 Q3 ($4,176). B: others | 2025 Q4 uses a reported year-end close of $4,323; 2026 Q2 is implied by a reported 3.7% Q3 gain to $4,157 |
 | Gold stock | World Gold Council — https://www.gold.org/goldhub/data/how-much-gold | B: year-ends 2019–2024. E: 2025 onward and all intra-year quarters | Intra-year values are linear interpolations; 2025–26 assume about 3,600 tonnes of net additions a year |
+
+## Outside the workbook
+
+| Series | Definition | Unit | Source | Used in |
+|---|---|---|---|---|
+| Stablecoin supply | Total circulating USD-pegged stablecoins, last observation of the quarter | $T | DefiLlama — https://stablecoins.llama.fi/stablecoincharts/all | Locked USD in the liquidity-flow and driver models |
+
+Kept in `data/stablecoins.csv` and refreshed in full by `scripts/fetch_stablecoins.py`. It is a single-source series with no independent check, and the source revises history as it adds coins. It covers 2019 Q4 onward: $4B then, $304B in 2026 Q3.
+
+The share of stablecoin reserves held in US Treasuries is not a data series here. It is an assumption set in the web app (75% by default).
 
 ## Removed series
 

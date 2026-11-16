@@ -1,6 +1,8 @@
 # Methodology
 
-How the model in `crypto_model_v2.xlsx` works, why it is built this way, and where it should not be trusted. For the cell-level layout see the [workbook guide](workbook-guide.md).
+How the models work, why they are built this way, and where they should not be trusted.
+
+There are two. The **macro regression** lives in the workbook `crypto_model_v2.xlsx` and is described first; for its cell-level layout see the [workbook guide](workbook-guide.md). The **liquidity-flow model** and the **driver model** built on it live in the [web app](web-app.md) and are described [further down](#liquidity-flow-model).
 
 ## Background: what v2 replaced
 
@@ -60,6 +62,72 @@ Each real-time signal is paired with the following quarter's realised crypto ret
 
 The yellow row at the bottom of `Model` holds next-quarter inputs, carried forward from the latest quarter by default. Overwrite them with your assumptions. Leave crypto blank to see fair value only. The scenario row is never used in estimation or in the backtest.
 
+## Liquidity-flow model
+
+The question it answers: how much USD can become crypto market cap? It follows the dollars.
+
+| Step | Definition |
+|---|---|
+| Flowing USD | M2 |
+| Free USD | `M2 − GDP ÷ V*`, with V* = 1.45. Money beyond what the real economy needs at its normal velocity. This is the same anchored measure as the workbook's "excess money" |
+| Locked USD | Supply of USD stablecoins at quarter-end (DefiLlama) |
+| Lock-in share | Locked USD ÷ M2 |
+| Treasury collateral | Locked USD × the share of stablecoin reserves held in US Treasuries |
+| Crypto V | Crypto market cap ÷ locked USD |
+| Market cap | Crypto V × locked USD |
+
+**Primary and secondary market.** A dollar enters through the primary market when a stablecoin is minted against it. From then on it circulates in the secondary market, where trading sets prices. Crypto V is what that trading makes of each locked dollar. It is the counterpart of the velocity of M2, with market value in the place of GDP.
+
+**The dual lens.** A dollar that buys a stablecoin does not leave the banking system. The issuer spends it on Treasury bills, the cash goes to whoever sold the bills, and M2 is unchanged. What is created is a second claim: a dollar-token inside the crypto market, backed by a Treasury bill outside it. Locked USD therefore counts twice, as liquidity inside crypto and as demand for US government debt. In 2026 Q3, at an assumed 75% backing, issuers held about $228B of Treasuries, 0.57% of the debt stock. Their weight as a buyer depends on how fast locked USD is growing: it added about $70B in 2024 and $100B in 2025, but only $12B in the year to 2026 Q3.
+
+**What the identity can and cannot do.** `Market cap = V × locked USD` is true by definition, because V is defined as the ratio. It explains nothing on its own. Its use is to split a forecast into parts one can reason about separately: the money stock (the Fed), the share of it that crosses into crypto, and the multiple the market puts on it (Wall Street's appetite for risk).
+
+**History.** Locked USD rose from $4B (0.03% of M2) at the end of 2019 to $304B (1.30%) in 2026 Q3. Crypto V fell from 45× to about 10× over the same period, as the stablecoin base grew faster than market cap. Over the last 16 quarters V had a median of 11.1× and a middle half of 9.3× to 13.7×.
+
+**Free USD against locked USD.** Free USD peaked at $4.4T in 2020–2021 and has fallen to $0.64T as GDP caught up with the money stock. Locked USD kept rising throughout, from about 2% of free USD to 47%. So crypto's dollar base did not track the overhang quarter by quarter; it accumulated while the overhang was large and has not drained since.
+
+### Driver model
+
+The default forecast in the web app. It lets the Fed and Wall Street move the chain:
+
+```
+Locked USD   = lock-in share × M2
+Δln V        = β · Δln(US equity cap) + κ · (average ln V − last ln V)
+Market cap   = V × locked USD
+```
+
+- The Fed acts through M2, and so through locked USD.
+- Wall Street acts through β: crypto V rises and falls with equities.
+- κ pulls V back toward its own average.
+- The lock-in share holds unless the user sets a drift.
+
+Estimated on 26 quarters: β = 0.69, κ = 0.05 a quarter, average V = 13.4×. There is no intercept. The band around a scenario is the model's typical one-quarter error, widened with the square root of the horizon.
+
+**How it was chosen, and how good it is.** About twenty candidate forms were compared on one-quarter-ahead forecasts, each fitted only on earlier quarters, across five different starting points for the test. The candidates varied how locked USD evolves (unchanged, momentum, momentum plus past returns) and what moves V (mean reversion, equities, the policy rate, combinations), and included ensembles. The findings:
+
+| | Typical error, given the equity path | vs no change | Typical error, equity path unknown | vs no change |
+|---|---|---|---|---|
+| No change | 27% | – | 27% | – |
+| Equity beta only | 26% | −5% | 27% | about 0% |
+| Driver model | 26% | −3% | 27% | about 0% |
+
+(16 forecasts, 2022 Q4 to 2026 Q3. Typical error is root-mean-square error in logs.)
+
+- **Without knowing where equities go, nothing beats "no change".** This held for every candidate.
+- Told the equity path, the equity-driven forms were 3% to 11% more accurate than "no change" in most test windows.
+- The ranking of candidates changed with the test window. Richer forms, with intercepts, the policy rate or momentum in locked USD, won in some windows and lost badly in others. That is what too little data looks like.
+- The form above was kept because it was the most stable, not because it was the best anywhere. Picking one form out of twenty by its test results flatters it.
+
+So the driver model is a translator. It turns a view on the Fed and Wall Street into a crypto market cap. It does not supply the view, and a typical one-quarter error of about 26% says how loosely even a correct view maps to the outcome. The web app reruns this comparison on the current data and shows it under "How good is the forecast?".
+
+**Limits specific to these models.**
+
+- Stablecoin supply is the narrowest measure of locked USD. Direct fiat purchases and ETF inflows are missing, so V overstates the effect of a dollar of inflow.
+- The Treasury backing share is an assumption; no free series reports reserve composition.
+- V was far higher in 2019–2020, when the stablecoin base was tiny. That pulls its average up and makes κ small.
+- Turnover velocity, trading volume ÷ locked USD, is available live only. Its history has no free source.
+- The policy rate did not help forecasts reliably and is not in the V equation. The Fed enters through M2 only.
+
 ## Current estimates
 
 | | Coefficient | t-stat |
@@ -98,7 +166,9 @@ These are as of 2026 Q3. The live values are on `Params` and `Summary`.
 
 None of these is implemented.
 
-- Add stablecoin supply or spot-ETF flows as a regressor once enough quarters exist.
+- Add spot-ETF flows and exchange fiat inflows to locked USD, to widen it beyond stablecoins.
+- Replace the assumed Treasury backing share with figures from issuers' reserve reports.
+- Bring the liquidity-flow model into the workbook as its own sheet.
 - Replace the regression SE in the real-time Z-score with the forecast standard error.
 - Estimate an error-correction model if a longer sample ever supports cointegration.
 - Move to monthly data to raise the number of observations.

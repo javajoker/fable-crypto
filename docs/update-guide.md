@@ -1,6 +1,8 @@
 # Update guide
 
-How to add a quarter, run a scenario and check the result. Layout details are in the [workbook guide](workbook-guide.md).
+How to add a quarter, run a scenario and check the result, working in Excel. Layout details are in the [workbook guide](workbook-guide.md).
+
+The [toolset](toolset.md) does the same from the command line and fetches most of the inputs for you. Whichever route you take, finish with `make update` so that the site and the stablecoin data follow the workbook.
 
 ## Adding a quarter
 
@@ -11,11 +13,13 @@ How to add a quarter, run a scenario and check the result. Layout details are in
 5. **Refresh the scenario row.** Change its label to the next quarter, keeping the text `(scenario)`, and set its yellow inputs. Clear its crypto cell unless you want a scenario gap.
 6. **Check `Summary`.** The latest quarter should be the one you added, and all eight integrity checks should read `OK`.
 7. **Update the records.** Add the quarter's sources and confidence grades to `Data_Sources`, and re-read the written verdict on `Backtest` against the new numbers.
-8. **Save, then run the independent check:**
+8. **Save, then check and republish:**
 
 ```bash
-python3 scripts/check_model.py
+make update
 ```
+
+This refreshes stablecoin supply, runs the independent check and rebuilds the site's data.
 
 Nothing else needs editing. The regression, diagnostics, backtest, `Summary` and charts all follow the last actual row.
 

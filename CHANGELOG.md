@@ -1,5 +1,34 @@
 # Changelog
 
+## Site, liquidity-flow model and toolset — 16 November 2026
+
+The workbook is unchanged at v2.1.
+
+### Added
+
+- **Web app and portal** in `site/`: static, no backend, no third-party libraries. A portal page, a forecast app and a docs viewer. All numbers are computed in the browser from the workbook's inputs.
+- **Liquidity-flow model**: flowing USD (M2) → free USD → locked USD (stablecoin supply) → crypto V → market cap, with the Treasury collateral behind locked USD carried alongside.
+- **Driver model**, the app's default forecast: locked USD follows M2, crypto V follows US equities and reverts toward its average. Selected by an out-of-sample comparison of about twenty forms; the comparison is rerun and shown in the app.
+- **Macro lenses** for the Federal Reserve, Wall Street and the Treasury market.
+- **Bitcoin** market cap and price implied by each scenario, from a dominance and supply assumption.
+- **Live data** in the app, on request, from CoinGecko and DefiLlama.
+- **Toolset**: `fetch_inputs.py` (FRED and Treasury, plus an audit mode), `add_quarter.py` (add or revise a quarter), `fetch_stablecoins.py`, `build_site.py`, and a `Makefile`.
+- `data/stablecoins.csv`: stablecoin supply for all 28 quarters.
+- Docs: `docs/web-app.md`, `docs/toolset.md`; new sections in `docs/methodology.md` and `docs/data-dictionary.md`.
+
+### Changed
+
+- `check_model.py` calculates a temporary copy with LibreOffice when the workbook holds no calculated values.
+- The README now describes the project as a whole.
+
+### Verification
+
+- The browser's regression, diagnostics and backtest match the workbook and `check_model.py`.
+- `add_quarter.py` was run on a copy: adding 2026 Q4 and revising 2026 Q3 both passed 23 of 23 checks. The real workbook was not modified.
+- `fetch_inputs.py --audit` compared 167 workbook values with FRED and the Treasury: 3 differ, all in reverse repo (memo only).
+- The site was exercised in a browser: three scenario modes, presets, live data, docs, phone width. No console errors.
+- Not done: opening a workbook saved by `add_quarter.py` in Excel.
+
 ## v2.1 — 16 November 2026
 
 A restructuring of the workbook. The model, the input data and every reported number are unchanged from v2: all 994 calculated values on `Model`, `Params` and `Backtest` match v2.
