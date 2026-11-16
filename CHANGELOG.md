@@ -1,5 +1,34 @@
 # Changelog
 
+## v2.2 — 16 November 2026
+
+The liquidity-flow model is now in the workbook. The regression model and its numbers are unchanged: all 1,041 calculated values on `Model`, `Params` and `Backtest` match v2.1.
+
+### Added
+
+- **`Flow` sheet**: flowing USD, free USD, locked USD, lock-in share, Treasury collateral and crypto V for every quarter, and the driver model's one-quarter-ahead V and market cap, all as formulas. Its yellow scenario row works with the scenario row on `Model`.
+- **Stablecoin supply** as an eleventh input, on `Flow` column G, for all 28 quarters.
+- **`Params` rows 33–42**: the Treasury backing share and V lookback (editable), and the driver model's β, κ, average V, median and quartiles.
+- **`Summary`**: a liquidity-chain block, a driver-model scenario block, and a ninth integrity check ("Locked USD filled in").
+- **Two charts**: locked USD and crypto V.
+- Named ranges `Flow_Locked`, `Flow_V`, `Flow_lnV`, `Flow_dV`, `Flow_X`.
+
+### Changed
+
+- **The workbook is the single home for data.** `data/stablecoins.csv` and `scripts/fetch_stablecoins.py` are gone. `fetch_inputs.py` fetches stablecoin supply with the other inputs and includes it in the audit; `add_quarter.py` writes it and keeps `Model` and `Flow` in step.
+- `fetch_inputs.py` downloads with `curl` and no longer retries a failed source for every quarter. An audit takes about 15 seconds.
+- `check_model.py` also verifies crypto V, β, κ, average and median V, and the scenario's V: 29 checks.
+- The site takes the backing share and the V lookback from `Params`.
+- Adding a quarter by hand in Excel now means inserting a row on two sheets. `add_quarter.py` is the safer route.
+
+### Verification
+
+- Recalculated in LibreOffice with no formula errors; 29 of 29 checks pass.
+- β, κ, average V, the median and the quartiles in the workbook equal the web app's to at least nine digits.
+- `add_quarter.py` on a copy: a new quarter without `--stable` is refused; adding 2026 Q4 and revising a stablecoin value both pass 29 of 29.
+- `fetch_inputs.py --audit`: 196 values compared, 3 differ, all in reverse repo.
+- Not done: opening the workbook in Excel.
+
 ## Site, liquidity-flow model and toolset — 16 November 2026
 
 The workbook is unchanged at v2.1.

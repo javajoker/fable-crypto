@@ -5,7 +5,7 @@ How much USD can become crypto market cap? This project follows the dollars: how
 It has three parts:
 
 - **A web app and portal** in [site/](site/index.html): the chain of dollars today, scenario forecasts for total crypto and Bitcoin, and the docs. Static files, no backend.
-- **An Excel workbook**, [docs/crypto_model_v2.xlsx](docs/crypto_model_v2.xlsx) (v2.1): a regression of crypto market cap on M2 and US equity wealth, used as a cross-check. Every result is a live formula.
+- **An Excel workbook**, [docs/crypto_model_v2.xlsx](docs/crypto_model_v2.xlsx) (v2.2): the same chain and driver model on its `Flow` sheet, plus a regression of crypto market cap on M2 and US equity wealth used as a cross-check. Every result is a live formula.
 - **A toolset** in [scripts/](scripts/): fetch new data, add a quarter, verify, rebuild the site.
 
 Not investment advice.
@@ -60,14 +60,13 @@ These figures are also on the workbook's `Summary` sheet and on the portal, wher
 |---|---|
 | [site/](site/index.html) | Portal, forecast app and docs viewer |
 | [docs/crypto_model_v2.xlsx](docs/crypto_model_v2.xlsx) | The workbook |
-| [data/stablecoins.csv](data/stablecoins.csv) | Locked USD by quarter |
 | [docs/methodology.md](docs/methodology.md) | Both models: equations, theory, estimates, forecast test, limitations, references |
 | [docs/web-app.md](docs/web-app.md) | What the site shows and how it is put together |
 | [docs/toolset.md](docs/toolset.md) | The scripts, and how to add a quarter with them |
 | [docs/workbook-guide.md](docs/workbook-guide.md) | Sheet-by-sheet and column-by-column reference, named ranges, formula conventions |
 | [docs/update-guide.md](docs/update-guide.md) | The same update done by hand in Excel |
 | [docs/data-dictionary.md](docs/data-dictionary.md) | Every input series: definition, source, confidence grade |
-| [scripts/](scripts/) | `fetch_inputs.py`, `add_quarter.py`, `fetch_stablecoins.py`, `build_site.py`, `check_model.py` |
+| [scripts/](scripts/) | `fetch_inputs.py`, `add_quarter.py`, `build_site.py`, `check_model.py` |
 | [Makefile](Makefile) | `make update`, `make check`, `make audit`, `make serve` |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 
@@ -77,7 +76,7 @@ These figures are also on the workbook's `Summary` sheet and on the portal, wher
 python3 scripts/fetch_inputs.py "2026 Q4"
 ```
 
-fetches six of the ten inputs from FRED and the Treasury and writes a file with three values to fill in by hand. Then:
+fetches seven of the eleven inputs from FRED, the Treasury and DefiLlama and writes a file with three values to fill in by hand. Then:
 
 ```bash
 python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json
@@ -87,13 +86,13 @@ python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json
 make update
 ```
 
-The first adds the quarter to the workbook and checks it; the second refreshes locked USD and rebuilds the site. Details in the [toolset guide](docs/toolset.md).
+The first adds the quarter to the workbook and checks it; the second rebuilds the site. Details in the [toolset guide](docs/toolset.md).
 
 ## Using the workbook
 
-1. Open the workbook and go to `Summary`. It shows the latest reading, the statistics that say how far to trust it, and eight integrity checks that should all read `OK`.
+1. Open the workbook and go to `Summary`. It shows the latest reading, the liquidity chain, the statistics that say how far to trust it, and nine integrity checks that should all read `OK`.
 2. To try your own assumptions, overwrite the yellow scenario row at the bottom of `Model`, or the yellow cells on `Params`.
-3. To add a new quarter, insert a row above the scenario row, copy the row above into it and type the new inputs. Nothing else needs editing. Details are in the [update guide](docs/update-guide.md).
+3. To add a new quarter, use `scripts/add_quarter.py`, or insert a row above the scenario row on both `Model` and `Flow`, copy the row above into it and type the new inputs. Nothing else needs editing. Details are in the [update guide](docs/update-guide.md).
 
 ## The workbook at a glance
 
@@ -102,9 +101,10 @@ The first adds the quarter to the workbook and checks it; the second refreshes l
 | `Guide` | One-page instructions and colour legend |
 | `Summary` | Latest reading, scenario, trust statistics, integrity checks |
 | `Model` | Inputs, diagnostics, fair value, real-time signal. One row per quarter |
+| `Flow` | The liquidity chain and the driver model. Rows match `Model` |
 | `Params` | Editable assumptions (yellow), live regression output, range control |
 | `Backtest` | Out-of-sample performance of the signal |
-| `Charts` | Actual vs fair value with error band; real-time Z-score; valuation gap |
+| `Charts` | Actual vs fair value with error band; real-time Z-score; valuation gap; locked USD; crypto V |
 | `Data_Sources` | Definition, source, link and confidence grade for every series |
 | `Audit_Log` | 14 logic/formula problems in the original sheet and 87 data corrections |
 | `Original_v1` | The original sheet, untouched |
@@ -117,7 +117,7 @@ The model in one line: `ln(Crypto) = a + b1·ln(M2) + b2·ln(Equity)`, estimated
 python3 scripts/check_model.py
 ```
 
-The script reads the blue input cells, recomputes the regression, the real-time signal and the backtest without using any spreadsheet formulas, and compares 23 results with the workbook's. It needs Python 3 and `openpyxl`. `make update` runs it for you.
+The script reads the blue input cells, recomputes the regression, the real-time signal and the backtest without using any spreadsheet formulas, and compares 29 results with the workbook's. It needs Python 3 and `openpyxl`. `make update` runs it for you.
 
 ## What changed in v2.1
 

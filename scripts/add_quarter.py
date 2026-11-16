@@ -3,19 +3,20 @@
 
     python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json
     python3 scripts/add_quarter.py --quarter "2026 Q4" --m2 23.70 --rrp 0.01 --gdp 33.40 --cpi 3.6 \
-        --rate 4.0 --debt 40.60 --equity 74.10 --crypto 2.55 --gold 4300 --gold-t 223500
+        --rate 4.0 --debt 40.60 --equity 74.10 --crypto 2.55 --gold 4300 --gold-t 223500 --stable 0.29
     python3 scripts/add_quarter.py --quarter "2026 Q3" --crypto 2.97        # revise one value
 
-A new quarter must be the one right after the latest quarter, and needs all ten inputs.
+A new quarter must be the one right after the latest quarter, and needs all eleven inputs
+(ten on the Model sheet, plus stablecoin supply on the Flow sheet).
 For an existing quarter, only the values given are changed.
 
 The JSON form is what fetch_inputs.py writes:
     {"quarter": "2026 Q4", "inputs": {"m2": 23.70, ...}, "estimated": ["equity", "gold_t"]}
 Series listed under "estimated" are shown in italic blue, the workbook's mark for estimates.
 
-The script does what the update guide describes doing by hand: it inserts a row above the
-scenario row, fills it, moves the scenario on by one quarter (inputs carried forward, crypto
-blank) and rebuilds the charts. Afterwards it runs check_model.py. Use --dry-run to preview.
+The script does what the update guide describes doing by hand: on Model and on Flow it inserts
+a row above the scenario row, fills it, moves the scenario on by one quarter (inputs carried
+forward, crypto blank) and rebuilds the charts. Afterwards it runs check_model.py. Use --dry-run to preview.
 """
 import argparse
 import json
@@ -34,7 +35,7 @@ ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDe
 ap.add_argument("--workbook", default=str(lib.WORKBOOK))
 ap.add_argument("--from-json")
 ap.add_argument("--quarter", help='label such as "2026 Q4"')
-for key, (_, desc, unit) in lib.INPUTS.items():
+for key, (_, desc, unit) in lib.ALL_INPUTS.items():
     ap.add_argument(f"--{key.replace('_', '-')}", type=float, dest=key, help=f"{desc} ({unit})")
 ap.add_argument("--estimated", default="", help="comma-separated series keys to mark as estimates, e.g. equity,gold_t")
 ap.add_argument("--dry-run", action="store_true")
@@ -47,21 +48,21 @@ if args.from_json:
     quarter = quarter or spec["quarter"]
     values.update({k: v for k, v in spec.get("inputs", {}).items() if v is not None})
     estimated += spec.get("estimated", [])
-values.update({k: getattr(args, k) for k in lib.INPUTS if getattr(args, k) is not None})
+values.update({k: getattr(args, k) for k in lib.ALL_INPUTS if getattr(args, k) is not None})
 
 if not quarter or not lib.QUARTER_RE.match(quarter):
     sys.exit('give the quarter as "YYYY Qn", e.g. --quarter "2026 Q4"')
-unknown = [k for k in list(values) + estimated if k not in lib.INPUTS]
+unknown = [k for k in list(values) + estimated if k not in lib.ALL_INPUTS]
 if unknown:
-    sys.exit(f"unknown series: {unknown}. Valid keys: {', '.join(lib.INPUTS)}")
+    sys.exit(f"unknown series: {unknown}. Valid keys: {', '.join(lib.ALL_INPUTS)}")
 for k, v in values.items():
     if not isinstance(v, (int, float)) or isinstance(v, bool):
         sys.exit(f"{k}: {v!r} is not a number")
-    if k in ("m2", "gdp", "equity", "crypto", "gold", "gold_t") and v <= 0:
+    if k in ("m2", "gdp", "equity", "crypto", "gold", "gold_t", "stable") and v <= 0:
         sys.exit(f"{k}: must be above zero")
 
 book = openpyxl.load_workbook(args.workbook)
-M = book["Model"]
+M, F = book["Model"], book["Flow"]
 scen = lib.scenario_row(M)
 last = scen - 1
 labels = {M[f"B{r}"].value: r for r in range(lib.FIRST, scen)}
@@ -70,8 +71,8 @@ latest = M[f"B{last}"].value
 
 def write_inputs(r, vals, italic_keys=()):
     for k, v in vals.items():
-        cell = M[f"{lib.INPUTS[k][0]}{r}"]
-        print(f"  {quarter if r != scen + 1 else 'scenario'}  {k:<7} {cell.value!s:>10} -> {v}")
+        cell = lib.cell_for(book, k, r)
+        print(f"  {quarter}  {k:<7} {cell.value!s:>10} -> {v}")
         cell.value = v
         if k in italic_keys or cell.font.i:
             f = copy(cell.font)
@@ -85,9 +86,9 @@ if quarter in labels:
     print(f"Revising {quarter} (row {labels[quarter]})")
     write_inputs(labels[quarter], values, estimated)
 elif quarter == lib.next_quarter(latest):
-    missing = [k for k in lib.INPUTS if k not in values]
+    missing = [k for k in lib.ALL_INPUTS if k not in values]
     if missing:
-        sys.exit(f"{quarter} is a new quarter and needs all ten inputs. Missing: {', '.join(missing)}")
+        sys.exit(f"{quarter} is a new quarter and needs all eleven inputs. Missing: {', '.join(missing)}")
     print(f"Adding {quarter} after {latest} (new row {scen}; scenario moves to row {scen + 1})")
 
     M.insert_rows(scen)                                   # values and styles move down; references do not
@@ -100,10 +101,25 @@ elif quarter == lib.next_quarter(latest):
             cell.value = lib.shift_own_row(above.value, last, new)
         if isinstance(old.value, str) and old.value.startswith("="):
             old.value = lib.shift_own_row(old.value, scen, moved)
+    F.insert_rows(scen)                                   # the Flow sheet keeps the same row numbers
+    for c in range(2, lib.FLOW_LAST_COL + 1):
+        above, cell, old = F.cell(last, c), F.cell(new, c), F.cell(moved, c)
+        cell.font, cell.fill, cell.border = copy(above.font), copy(above.fill), copy(above.border)
+        cell.alignment, cell.number_format = copy(above.alignment), above.number_format
+        if isinstance(above.value, str) and above.value.startswith("="):
+            cell.value = lib.shift_own_row(above.value, last, new)
+        if isinstance(old.value, str) and old.value.startswith("="):
+            old.value = lib.shift_own_row(old.value, scen, moved)     # incl. the scenario's locked-USD default
+    for rng in list(F.merged_cells.ranges):
+        if rng.min_row >= scen:
+            F.unmerge_cells(str(rng))
+            rng.shift(row_shift=1)
+            F.merge_cells(str(rng))
+
     M[f"B{new}"] = quarter
     write_inputs(new, values, estimated)
-    for k in lib.INPUTS:                                  # plain (not italic) unless flagged
-        cell = M[f"{lib.INPUTS[k][0]}{new}"]
+    for k in lib.ALL_INPUTS:                              # plain (not italic) unless flagged
+        cell = lib.cell_for(book, k, new)
         f = copy(cell.font)
         f.i = k in estimated
         cell.font = f

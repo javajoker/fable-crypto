@@ -18,7 +18,7 @@
   <section class="grid chain" id="chain"></section>
 
   <h2>The wider frame</h2>
-  <p class="muted" style="max-width:780px;margin-top:-4px">The Fed sets how much money there is and what it costs, Wall Street sets the appetite for risk, and the Treasury market is where the locked dollars end up. Treasury figures assume 75% of stablecoin reserves are in Treasuries; change it in the <a href="forecast.html">forecast app</a>.</p>
+  <p class="muted" style="max-width:780px;margin-top:-4px">The Fed sets how much money there is and what it costs, Wall Street sets the appetite for risk, and the Treasury market is where the locked dollars end up. Treasury figures assume <span id="backing"></span> of stablecoin reserves are in Treasuries; try other values in the <a href="forecast.html">forecast app</a>.</p>
   <section class="grid lenses" id="lenses"></section>
 
   <h2>What the cross-check says</h2>
@@ -38,11 +38,11 @@
   <h2>Keeping it current</h2>
   <div class="panel">
     <ol class="steps">
-      <li><b>Fetch.</b> <code>python3 scripts/fetch_inputs.py "2026 Q4"</code> pulls M2, GDP, CPI, the policy rate, reverse repo and public debt, and writes a file with three values left to fill in by hand.</li>
+      <li><b>Fetch.</b> <code>python3 scripts/fetch_inputs.py "2026 Q4"</code> pulls M2, GDP, CPI, the policy rate, reverse repo, public debt and stablecoin supply, and writes a file with three values left to fill in by hand.</li>
       <li><b>Apply.</b> <code>python3 scripts/add_quarter.py --from-json data/quarters/2026Q4.json</code> adds the quarter to the workbook and checks it against an independent recomputation.</li>
-      <li><b>Publish.</b> <code>python3 scripts/fetch_stablecoins.py</code> and <code>python3 scripts/build_site.py</code> refresh locked USD and rebuild this site's data.</li>
+      <li><b>Publish.</b> <code>make update</code> runs the check again and rebuilds this site's data from the workbook.</li>
     </ol>
-    <p class="small muted" style="margin:12px 0 0">Or all at once with <code>make update</code>. Details in the <a href="docs.html?doc=toolset">toolset guide</a>.</p>
+    <p class="small muted" style="margin:12px 0 0"><code>make audit</code> compares the workbook with the sources at any time. Details in the <a href="docs.html?doc=toolset">toolset guide</a>.</p>
   </div>
 
   <h2>Recent quarters</h2>
@@ -56,10 +56,11 @@
 (function () {
   "use strict";
   const $ = id => document.getElementById(id), { fmt, signalClass } = Site;
-  const { B, X, SH, kpi } = Site, BACKING = 0.75;
+  const { B, X, SH, kpi } = Site, BACKING = MODEL_DATA.params.treasury_backing;
   const model = CryptoModel.compute(MODEL_DATA), L = model.latest, bt = model.backtest;
-  const fm = CryptoModel.flow(MODEL_DATA, 16), F = fm.latest, VS = fm.stats;
+  const fm = CryptoModel.flow(MODEL_DATA, MODEL_DATA.params.v_lookback), F = fm.latest, VS = fm.stats;
 
+  $("backing").textContent = Math.round(BACKING * 100) + "%";
   $("asof").textContent = "· " + F.quarter;
   $("chain").innerHTML = Site.chain(fm, BACKING, null);
   $("lenses").innerHTML = Site.lenses(CryptoModel.macro(MODEL_DATA, BACKING));
@@ -73,7 +74,7 @@
   $("verdict").innerHTML = `<b>How far to trust it.</b> Over the ${bt.n} quarters where it could be tested out of sample, the regression signal showed no timing skill: ` +
     `correlation with the next quarter's return ${fmt.num(bt.corr)} (t = ${fmt.num(bt.t, 1)}), hit rate ${Math.round(bt.hit * 100)}%. ` +
     `Crypto V has ranged from ${X(VS.min)} to ${X(VS.max)} over the last ${VS.lookback} quarters, so most of the uncertainty in any projection sits there. Treat every number here as context, not as a trade signal.`;
-  $("wb-card").textContent = `Version ${MODEL_DATA.version}, ${model.n} quarters to ${MODEL_DATA.latest}. Every result is a live formula, including the regression; adding a quarter needs no formula edits.`;
+  $("wb-card").textContent = `Version ${MODEL_DATA.version}, ${model.n} quarters to ${MODEL_DATA.latest}. The liquidity chain, the driver model and the regression, all as live formulas; adding a quarter needs no formula edits.`;
   $("csv-card").textContent = `The ${model.n} quarters of inputs behind everything on this site, plus stablecoin supply, as a plain table.`;
 
   const byQ = Object.fromEntries(fm.rows.map(r => [r.quarter, r]));

@@ -2,7 +2,7 @@
 
 How the models work, why they are built this way, and where they should not be trusted.
 
-There are two. The **macro regression** lives in the workbook `crypto_model_v2.xlsx` and is described first; for its cell-level layout see the [workbook guide](workbook-guide.md). The **liquidity-flow model** and the **driver model** built on it live in the [web app](web-app.md) and are described [further down](#liquidity-flow-model).
+There are two. The **macro regression** is described first. The **liquidity-flow model** and the **driver model** built on it are described [further down](#liquidity-flow-model). All three are in the workbook `crypto_model_v2.xlsx` (see the [workbook guide](workbook-guide.md)) and in the [web app](web-app.md), which adds multi-quarter scenarios and the out-of-sample comparison of forecasting methods.
 
 ## Background: what v2 replaced
 
@@ -168,7 +168,7 @@ None of these is implemented.
 
 - Add spot-ETF flows and exchange fiat inflows to locked USD, to widen it beyond stablecoins.
 - Replace the assumed Treasury backing share with figures from issuers' reserve reports.
-- Bring the liquidity-flow model into the workbook as its own sheet.
+- Bring the out-of-sample comparison of forecasting methods into the workbook.
 - Replace the regression SE in the real-time Z-score with the forecast standard error.
 - Estimate an error-correction model if a longer sample ever supports cointegration.
 - Move to monthly data to raise the number of observations.

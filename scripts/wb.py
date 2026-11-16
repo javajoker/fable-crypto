@@ -23,6 +23,21 @@ INPUTS = {
     "gold":   ("K", "Gold price, LBMA PM, quarter-end", "$/oz"),
     "gold_t": ("L", "Above-ground gold stock", "tonnes"),
 }
+# the one input on the Flow sheet
+FLOW_INPUTS = {
+    "stable": ("G", "USD stablecoin supply, quarter-end (locked USD)", "$T"),
+}
+ALL_INPUTS = {**INPUTS, **FLOW_INPUTS}
+FLOW_LAST_COL = 19              # S
+
+
+def cell_for(book, key, row):
+    """The input cell for `key` in `row` (Model and Flow share row numbers)."""
+    if key in FLOW_INPUTS:
+        return book["Flow"][f"{FLOW_INPUTS[key][0]}{row}"]
+    return book["Model"][f"{INPUTS[key][0]}{row}"]
+
+
 QUARTER_RE = re.compile(r"^(\d{4}) Q([1-4])$")
 
 
@@ -38,15 +53,16 @@ def scenario_row(ws):
     return rows[0]
 
 
-def read_inputs(ws):
+def read_inputs(book):
     """Rows of actual quarters and the scenario row, inputs only (no calculated values needed)."""
+    ws = book["Model"]
     scen = scenario_row(ws)
 
     def row(r):
         d = {"quarter": str(ws[f"B{r}"].value).replace(" (scenario)", "")}
-        for key, (col, _, _) in INPUTS.items():
-            cell = ws[f"{col}{r}"]
-            d[key] = cell.value
+        for key in ALL_INPUTS:
+            cell = cell_for(book, key, r)
+            d[key] = None if isinstance(cell.value, str) else cell.value     # the scenario's locked USD is a formula
             if cell.font is not None and cell.font.i:
                 d.setdefault("estimated", []).append(key)
         return d
@@ -57,7 +73,8 @@ def read_inputs(ws):
 def read_params(wb):
     p = wb["Params"]
     return {"v_star": p["C5"].value, "z_rich": p["C7"].value, "z_cheap": p["C8"].value,
-            "regime_threshold": p["C9"].value, "min_window": int(p["C10"].value)}
+            "regime_threshold": p["C9"].value, "min_window": int(p["C10"].value),
+            "treasury_backing": p["C34"].value, "v_lookback": int(p["C35"].value)}
 
 
 def shift_own_row(formula, old, new):
@@ -89,7 +106,7 @@ def has_cached_values(path):
 
 
 def build_charts(wb, scen):
-    """(Re)build the three charts on `Charts` so they cover rows FIRST..scen of Model."""
+    """(Re)build the charts on `Charts` so they cover rows FIRST..scen of Model and Flow."""
     from openpyxl.chart import BarChart, LineChart, Reference, Series
     from openpyxl.chart.series import SeriesLabel
     from openpyxl.chart.shapes import GraphicalProperties
@@ -141,6 +158,21 @@ def build_charts(wb, scen):
         bar.type = "col"
         bar.gapWidth = 60
         s = Series(values(col), title=None)
+        s.tx = SeriesLabel(v=label)
+        s.graphicalProperties = GraphicalProperties(solidFill=color)
+        s.invertIfNegative = False
+        bar.series.append(s)
+        bar.legend = None
+        finish(bar, title, fmt, anchor)
+
+    flow = wb["Flow"]
+    for col, label, color, title, fmt, anchor in (
+            (7, "Locked USD", "2A78D6", "Locked USD: stablecoin supply ($T)", "0.00", "B73"),
+            (12, "Crypto V", "EB6834", "Crypto V: market cap per locked dollar", "0", "B96")):
+        bar = BarChart()
+        bar.type = "col"
+        bar.gapWidth = 60
+        s = Series(Reference(flow, min_col=col, min_row=FIRST, max_row=scen), title=None)
         s.tx = SeriesLabel(v=label)
         s.graphicalProperties = GraphicalProperties(solidFill=color)
         s.invertIfNegative = False

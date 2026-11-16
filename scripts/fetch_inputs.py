@@ -7,6 +7,7 @@
 Fetched automatically (no API key):
     m2, gdp, cpi, rate, rrp   FRED (M2SL, GDP, CPIAUCNS, DFEDTARU, RRPONTSYD)
     debt                      US Treasury Debt to the Penny
+    stable                    DefiLlama, USD stablecoin supply (the Flow sheet's locked USD)
 Estimated:
     gold_t                    previous quarter + about 900 tonnes (the workbook's method)
 To be filled in by hand in the JSON (no free quarter-end source):
@@ -20,33 +21,55 @@ import argparse
 import csv
 import io
 import json
+import shutil
+import subprocess
 import sys
 import urllib.request
-from datetime import date
+from datetime import date, datetime, timezone
 
 import wb as lib
 
 UA = {"User-Agent": "curl/8.7.1", "Accept": "*/*"}      # FRED drops connections from unfamiliar clients
+CURL = shutil.which("curl")
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={}&cosd=2018-01-01"
 DEBT = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny"
         "?fields=record_date,tot_pub_debt_out_amt&filter=record_date:gte:2019-10-01&sort=record_date&page[size]=10000")
-TOLERANCE = {"m2": 0.01, "gdp": 0.01, "debt": 0.01, "rrp": 0.05, "cpi": 0.15, "rate": 0.001}   # relative, except cpi/rate (points)
+STABLE = "https://stablecoins.llama.fi/stablecoincharts/all"
+TOLERANCE = {"m2": 0.01, "gdp": 0.01, "debt": 0.01, "stable": 0.02, "rrp": 0.05, "cpi": 0.15, "rate": 0.001}   # relative, except cpi/rate (points)
 
 
 def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=40) as r:
+    """curl when available (much faster and steadier against these hosts), else urllib."""
+    if CURL:
+        r = subprocess.run([CURL, "-sS", "-f", "-L", "-g", "-m", "45", url], capture_output=True, text=True)
+        if r.returncode:
+            raise RuntimeError(r.stderr.strip() or f"curl exit {r.returncode}")
+        return r.stdout
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=45) as r:
         return r.read().decode()
 
 
 _cache = {}
 
 
+def source(key, load):
+    """Load a source once per run. A failure is remembered too, so an audit does not retry it per quarter."""
+    if key not in _cache:
+        try:
+            _cache[key] = load()
+        except Exception as e:
+            _cache[key] = e
+    if isinstance(_cache[key], Exception):
+        raise _cache[key]
+    return _cache[key]
+
+
 def fred(series):
-    if series not in _cache:
+    def load():
         rows = csv.reader(io.StringIO(get(FRED.format(series))))
         next(rows)
-        _cache[series] = [(date.fromisoformat(d), float(v)) for d, v in rows if v not in ("", ".")]
-    return _cache[series]
+        return [(date.fromisoformat(d), float(v)) for d, v in rows if v not in ("", ".")]
+    return source(series, load)
 
 
 def quarter_dates(label):
@@ -88,14 +111,22 @@ def fetch(label):
     except Exception as e:                                             # network or format trouble: report, keep going
         notes["fred"] = f"FRED fetch failed: {e}"
     try:
-        if "debt" not in _cache:
-            _cache["debt"] = [(date.fromisoformat(r["record_date"]), float(r["tot_pub_debt_out_amt"]))
-                              for r in json.loads(get(DEBT))["data"]]
-        obs = [(d, v) for d, v in _cache["debt"] if start <= d <= end]
+        debt = source("debt", lambda: [(date.fromisoformat(r["record_date"]), float(r["tot_pub_debt_out_amt"]))
+                                       for r in json.loads(get(DEBT))["data"]])
+        obs = [(d, v) for d, v in debt if start <= d <= end]
         if obs and (end - obs[-1][0]).days <= 5:
             out["debt"], notes["debt"] = round(obs[-1][1] / 1e12, 2), f"Treasury Debt to the Penny {obs[-1][0]}"
     except Exception as e:
         notes["treasury"] = f"Treasury fetch failed: {e}"
+    try:
+        stable = source("stable", lambda: sorted(
+            (datetime.fromtimestamp(int(r["date"]), timezone.utc).date(), r["totalCirculatingUSD"].get("peggedUSD"))
+            for r in json.loads(get(STABLE)) if r["totalCirculatingUSD"].get("peggedUSD")))
+        obs = [(d, v) for d, v in stable if d <= end]
+        if obs and (end - obs[-1][0]).days <= 7:
+            out["stable"], notes["stable"] = round(obs[-1][1] / 1e12, 4), f"DefiLlama stablecoins {obs[-1][0]}"
+    except Exception as e:
+        notes["defillama"] = f"DefiLlama fetch failed: {e}"
     return out, notes
 
 
@@ -108,7 +139,7 @@ args = ap.parse_args()
 
 import openpyxl  # noqa: E402
 
-rows, _ = lib.read_inputs(openpyxl.load_workbook(args.workbook)["Model"])
+rows, _ = lib.read_inputs(openpyxl.load_workbook(args.workbook))
 
 if args.audit:
     print(f"{'quarter':<9}{'series':<8}{'workbook':>10}{'source':>10}{'diff':>9}   source")
@@ -119,15 +150,16 @@ if args.audit:
             compared += 1
             have = row[k]
             diff = v - have
-            limit = TOLERANCE[k] if k in ("cpi", "rate") else max(TOLERANCE[k] * abs(v), 0.011)
+            limit = TOLERANCE[k] if k in ("cpi", "rate") else max(TOLERANCE[k] * abs(v), 0.0005 if k == "stable" else 0.011)
             if abs(diff) > limit:
                 differ += 1
-                print(f"{row['quarter']:<9}{k:<8}{have:>10.2f}{v:>10.2f}{diff:>+9.2f}   {notes[k]}")
-    for k in ("fred", "treasury"):
+                d = 4 if k == "stable" else 2
+                print(f"{row['quarter']:<9}{k:<8}{have:>10.{d}f}{v:>10.{d}f}{diff:>+9.{d}f}   {notes[k]}")
+    for k in ("fred", "treasury", "defillama"):
         if k in notes:
             print(f"WARNING: {notes[k]}")
     print(f"\n{compared} values compared, {differ} differ by more than the tolerance "
-          f"(1% for m2/gdp/debt, 5% for rrp, 0.15pp for cpi, exact for rate).")
+          f"(1% for m2/gdp/debt, 2% for stable, 5% for rrp, 0.15pp for cpi, exact for rate).")
     print("Not compared: equity, crypto, gold, gold_t (no free source). GDP is the latest vintage; the workbook holds\n"
           "earlier vintages for some quarters. Nothing was changed. To apply a value: add_quarter.py --quarter ... --<series> ...")
     sys.exit(0)
@@ -136,7 +168,7 @@ if not args.quarter or not lib.QUARTER_RE.match(args.quarter):
     sys.exit('give a quarter such as "2026 Q4", or --audit')
 
 got, notes = fetch(args.quarter)
-inputs = {k: got.get(k) for k in lib.INPUTS}
+inputs = {k: got.get(k) for k in lib.ALL_INPUTS}
 estimated = []
 prev = next((r for r in rows if lib.next_quarter(r["quarter"]) == args.quarter), None)
 if prev and prev["gold_t"]:
@@ -157,10 +189,10 @@ path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps({"quarter": args.quarter, "inputs": inputs, "estimated": estimated, "notes": notes}, indent=2) + "\n")
 
 print(f"{args.quarter}")
-for k in lib.INPUTS:
+for k in lib.ALL_INPUTS:
     v = inputs[k]
     print(f"  {k:<7} {'--' if v is None else v:>10}   {notes.get(k, 'not available yet')}")
-for k in ("fred", "treasury"):
+for k in ("fred", "treasury", "defillama"):
     if k in notes:
         print(f"  WARNING: {notes[k]}")
 missing = [k for k, v in inputs.items() if v is None]

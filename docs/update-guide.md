@@ -2,26 +2,29 @@
 
 How to add a quarter, run a scenario and check the result, working in Excel. Layout details are in the [workbook guide](workbook-guide.md).
 
-The [toolset](toolset.md) does the same from the command line and fetches most of the inputs for you. Whichever route you take, finish with `make update` so that the site and the stablecoin data follow the workbook.
+The [toolset](toolset.md) does the same from the command line and fetches most of the inputs for you. Whichever route you take, finish with `make update` so that the site follows the workbook.
 
 ## Adding a quarter
 
-1. **Collect the ten inputs** for the quarter that has ended. Definitions, sources and links are in the [data dictionary](data-dictionary.md). Use the same definitions as earlier rows (for example quarter-end month for M2, upper bound for the Fed funds target).
+1. **Collect the eleven inputs** for the quarter that has ended: ten for `Model` and stablecoin supply for `Flow`. Definitions, sources and links are in the [data dictionary](data-dictionary.md). Use the same definitions as earlier rows (for example quarter-end month for M2, upper bound for the Fed funds target).
 2. **Insert a row** on `Model` directly above the yellow scenario row. Right-click the scenario row's number and choose Insert.
 3. **Copy the row above** into the new row (the whole row, columns B to AO).
 4. **Type the new values** over the copied ones: the quarter label in B and the inputs in C to L. Follow the colour convention: plain blue for sourced values, italic blue for estimates.
-5. **Refresh the scenario row.** Change its label to the next quarter, keeping the text `(scenario)`, and set its yellow inputs. Clear its crypto cell unless you want a scenario gap.
-6. **Check `Summary`.** The latest quarter should be the one you added, and all eight integrity checks should read `OK`.
-7. **Update the records.** Add the quarter's sources and confidence grades to `Data_Sources`, and re-read the written verdict on `Backtest` against the new numbers.
-8. **Save, then check and republish:**
+5. **Repeat on `Flow`.** Insert a row above its scenario row, at the same row number as on `Model`, copy the row above into it, and type the stablecoin supply in column G. The two sheets must keep the same row numbers, because `Flow` reads `Model` by row.
+6. **Refresh the scenario row.** Change its label to the next quarter, keeping the text `(scenario)`, and set its yellow inputs. Clear its crypto cell unless you want a scenario gap.
+7. **Check `Summary`.** The latest quarter should be the one you added, and all nine integrity checks should read `OK`.
+8. **Update the records.** Add the quarter's sources and confidence grades to `Data_Sources`, and re-read the written verdict on `Backtest` against the new numbers.
+9. **Save, then check and republish:**
 
 ```bash
 make update
 ```
 
-This refreshes stablecoin supply, runs the independent check and rebuilds the site's data.
+This runs the independent check and rebuilds the site's data.
 
-Nothing else needs editing. The regression, diagnostics, backtest, `Summary` and charts all follow the last actual row.
+Nothing else needs editing. The regression, the driver model, diagnostics, backtest, `Summary` and charts all follow the last actual row.
+
+Because two sheets must stay in step, `scripts/add_quarter.py` is the safer route: it does steps 2 to 6 in one go.
 
 ## Running a scenario
 
@@ -54,6 +57,8 @@ Blue cells can be overwritten at any time, for example when GDP is revised. Note
 | Symptom | Likely cause |
 |---|---|
 | `Scenario row found` reads `CHECK` | The scenario label lost the text `(scenario)` |
+| `Locked USD filled in` reads `CHECK` | A row was added on `Model` but not on `Flow`, or its stablecoin cell is empty |
+| `Flow` shows the wrong quarter's figures | `Flow` and `Model` no longer have the same row numbers |
 | The latest quarter on `Summary` is not the one added | The new row was inserted below the scenario row, or a second label contains `(scenario)` |
 | `No blank inputs` or `All inputs numeric` reads `CHECK` | A missing value, or a number typed as text (often a trailing space or a `$` sign) |
 | `Observations match rows` reads `CHECK` | Crypto cap is blank in an actual quarter |

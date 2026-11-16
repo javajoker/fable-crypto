@@ -18,7 +18,7 @@
 
   <div class="panel controls" style="margin-top:14px;display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:6px 22px;align-items:center">
     <div><label style="margin-top:0">Stablecoin reserves held in US Treasuries <span id="bk-v"></span></label>
-    <input type="range" id="bk" min="40" max="100" step="5" value="75"></div>
+    <input type="range" id="bk" min="40" max="100" step="5"></div>
     <div class="hint">An assumption, not data: there is no free series for reserve composition. Check the issuers' reserve reports and set it. It changes the Treasury figures only, never the market cap.</div>
   </div>
 
@@ -149,7 +149,7 @@
   const $ = id => document.getElementById(id), { fmt, signalClass, css } = Site;
   const { B, X, SH, kpi } = Site;
   const model = CryptoModel.compute(MODEL_DATA), L = model.latest, trend = CryptoModel.trailingGrowth(model), bt = model.backtest;
-  const fm = CryptoModel.flow(MODEL_DATA, 16), F = fm.latest, VS = fm.stats, dm = CryptoModel.drivers(MODEL_DATA);
+  const fm = CryptoModel.flow(MODEL_DATA, MODEL_DATA.params.v_lookback), F = fm.latest, VS = fm.stats, dm = CryptoModel.drivers(MODEL_DATA);
   const round = (v, s) => +(Math.round(v / s) * s).toFixed(4);
   const m2Trend = round(trend.m2 * 100, 0.5);
 
@@ -171,6 +171,8 @@
     "Recent trend": { m2: m2Trend, eq: round(trend.equity * 100, 1) }, "Soft landing": { m2: 5, eq: 8 }, "Risk-on": { m2: 7, eq: 18 },
     "Equity bear market": { m2: 3, eq: -25 }, "Flat": { m2: 0, eq: 0 },
   };
+
+  $("bk").value = Math.round(MODEL_DATA.params.treasury_backing * 100);
 
   // ---- static text
   $("bt-inline").textContent = `correlation with the next quarter's return ${fmt.num(bt.corr)}, hit rate ${Math.round(bt.hit * 100)}% over ${bt.n} quarters`;

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Independent check of crypto_model_v2.xlsx.
 
-Reads the blue input cells from the `Model` sheet, recomputes the regression, the
-real-time (expanding-window) signal and the backtest statistics in plain Python, and
+Reads the blue input cells from the `Model` and `Flow` sheets, recomputes the regression,
+the real-time (expanding-window) signal, the backtest statistics and the driver-model
+equation in plain Python, and
 compares them with the values Excel last calculated and saved in the workbook.
 
     python3 scripts/check_model.py [path/to/workbook.xlsx]
@@ -141,6 +142,30 @@ cheap, rich = P["C8"].value, P["C7"].value
 check("'Cheap' quarters", sum(u <= cheap for u in zs), B["C6"].value)
 check("'Neutral' quarters", sum(cheap < u < rich for u in zs), B["C7"].value)
 check("'Rich' quarters", sum(u >= rich for u in zs), B["C8"].value)
+
+# ---- liquidity flow (Flow sheet): crypto V and the driver-model equation
+if "Flow" in wb.sheetnames:
+    F = wb["Flow"]
+    st = [F[f"G{r}"].value for r in rows]
+    if any(not isinstance(v, (int, float)) or v <= 0 for v in st):
+        sys.exit("FAIL: blank or non-positive stablecoin supply on Flow for an actual quarter")
+    lv = [math.log(c / s) for c, s in zip(cr, st)]
+    de = [x2[t] - x2[t - 1] for t in range(1, n)]
+    a11 = a22 = a12 = b1_ = b2_ = 0.0
+    for t in range(2, n):                                   # no intercept; each quarter uses only its own past
+        u, w, yv = de[t - 1], sum(lv[:t]) / t - lv[t - 1], lv[t] - lv[t - 1]
+        a11 += u * u; a22 += w * w; a12 += u * w; b1_ += u * yv; b2_ += w * yv
+    det = a11 * a22 - a12 * a12
+    beta_v, kappa = (b1_ * a22 - b2_ * a12) / det, (a11 * b2_ - a12 * b1_) / det
+    look = sorted(math.exp(v) for v in lv[-int(P["C35"].value):])
+    mid = (look[len(look) // 2] + look[(len(look) - 1) // 2]) / 2
+    check("crypto V, latest quarter", cr[-1] / st[-1], F[f"L{last}"].value)
+    check("driver model: beta (equities)", beta_v, P["C36"].value)
+    check("driver model: kappa (pull to average)", kappa, P["C37"].value)
+    check("average crypto V", math.exp(sum(lv) / n), P["C38"].value)
+    check("median crypto V, lookback", mid, P["C39"].value)
+    v_next = math.exp(lv[-1] + beta_v * math.log(M[f"I{scen}"].value / eq[-1]) + kappa * (sum(lv) / n - lv[-1]))
+    check("scenario: crypto V, driver model", v_next, F[f"Q{scen}"].value)
 
 # ---- the workbook's own integrity checks
 if "Summary" in wb.sheetnames:

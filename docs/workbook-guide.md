@@ -1,6 +1,6 @@
 # Workbook guide
 
-A reference for the layout of `crypto_model_v2.xlsx` (v2.1). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
+A reference for the layout of `crypto_model_v2.xlsx` (v2.2). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
 
 ## Colour conventions
 
@@ -30,7 +30,9 @@ Four blocks, all formulas:
 | Latest reading | Actual, fair value, band, gap, both Z-scores, valuation signal, liquidity regime for the latest actual quarter |
 | Scenario row | Fair value and band under the scenario inputs; scenario gap if a crypto value is typed in |
 | How far to trust it | n, R², SE, Durbin–Watson, Engle–Granger τ, backtest correlation and hit rate, with plain yes/no readings |
-| Integrity checks | Eight checks and an overall status (see below) |
+| Integrity checks | Nine checks and an overall status (see below) |
+| Liquidity chain | Flowing USD, free USD, locked USD, Treasury collateral, crypto V and market cap for the latest quarter |
+| Driver model, scenario row | Locked USD, crypto V and market cap one quarter ahead under the scenario inputs |
 
 ### `Model`
 
@@ -46,6 +48,20 @@ One row per quarter from row 9. The last row with a label containing `(scenario)
 | AD–AJ | Real-time signal | Real-time fair value, real-time SE, real-time Z, valuation signal, 4-quarter rate change, liquidity regime, next-quarter crypto return |
 | AK–AO | Helpers | Residual change, crypto log return, equity log return, out-of-sample pair flag, directional hit |
 
+### `Flow`
+
+The liquidity-flow chain and the driver model. Its rows match `Model` one for one: same row numbers, same scenario row. It reads `Model` by row number, so the two sheets must stay in step.
+
+| Columns | Group | Content |
+|---|---|---|
+| B–F | Linked from Model | Quarter, M2, GDP, crypto market cap, US equity cap |
+| G | Input | Stablecoin supply (locked USD). In the scenario row it defaults to last quarter's lock-in share × the scenario's M2 |
+| H–K | The chain | Free USD, lock-in share, share of free USD, Treasury collateral |
+| L–P | Crypto V | V, ln V, its change, the change in ln equity cap, the pull toward V's running average |
+| Q–S | Driver model | V and market cap one quarter ahead given that quarter's equity move and locked USD, and the miss against the actual |
+
+Columns Q–S use coefficients fitted on the whole sample, so for past quarters they show fit, not forecasts. The out-of-sample test is in the web app.
+
 ### `Params`
 
 | Rows | Content |
@@ -54,6 +70,8 @@ One row per quarter from row 9. The last row with a label containing `(scenario)
 | 14–16 | Regression coefficients, standard errors, t-stats |
 | 18–24 | R², SE, observations, Durbin–Watson, Engle–Granger τ, return beta and its t-stat |
 | 27–31 | Range control: first data row, scenario row, last actual row, latest quarter, first real-time quarter. Formulas; do not edit |
+| 34–35 | Editable (yellow): share of stablecoin reserves held in Treasuries (an assumption), lookback for the usual range of V |
+| 36–42 | Driver model: β (equities), κ (pull to average), average V, median and quartiles of V over the lookback, observations |
 
 ### `Backtest`
 
@@ -64,6 +82,8 @@ Counts, average next-quarter return and share of gains by signal; correlation, t
 1. Actual crypto market cap vs fair value with the ±1 SE band
 2. Real-time Z-score
 3. Valuation gap, full sample
+4. Locked USD
+5. Crypto V
 
 Chart ranges run through the scenario row, so a quarter inserted above it appears without editing the charts. The scenario row shows as the last point of the fair-value lines.
 
@@ -85,6 +105,15 @@ All of them start at the first data row and end at `Params!C29`, the last actual
 | `Ret_Crypto`, `Ret_Equity` | AL, AM | Quarterly log returns (return beta) |
 | `BT_Z`, `BT_Signal`, `BT_NextRet` | AF, AG, AJ | Backtest inputs |
 | `BT_OOS`, `BT_Hit` | AN, AO | Out-of-sample pair flag and directional hit |
+
+And on `Flow`:
+
+| Name | Column on `Flow` | Used for |
+|---|---|---|
+| `Flow_Locked` | G | Stablecoin supply (the "locked USD filled in" check) |
+| `Flow_V`, `Flow_lnV` | L, M | Crypto V and its log |
+| `Flow_dV` | N | Change in ln V, from the third quarter on (dependent variable of the V equation) |
+| `Flow_X` | O:P | Its two regressors |
 
 They are defined as, for example, `Model!$U$9:INDEX(Model!$U:$U,Params!$C$29)`. `INDEX` is used in preference to `OFFSET` because it is not volatile.
 
@@ -127,6 +156,7 @@ On `Summary`. Each returns `OK` or `CHECK`.
 | Residuals sum to zero | The fair-value columns and the regression are on different samples |
 | Minimum window is usable | The window is below 4 or leaves almost nothing to test on |
 | No formula errors on Model | Any calculated cell on `Model` shows an error |
+| Locked USD filled in | `Flow` lacks a stablecoin value for an actual quarter |
 
 ## Compatibility
 

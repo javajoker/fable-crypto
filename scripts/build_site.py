@@ -35,22 +35,13 @@ DOCS = [  # slug, title, path
 ]
 
 book = openpyxl.load_workbook(lib.WORKBOOK)
-rows, scenario = lib.read_inputs(book["Model"])
-
-# "locked USD" for the liquidity-flow model: stablecoin supply, kept outside the workbook
-stable_file = lib.ROOT / "data" / "stablecoins.csv"
-stable = {}
-if stable_file.exists():
-    with open(stable_file) as f:
-        stable = {r["quarter"]: float(r["stablecoins_usd_trillion"]) for r in csv.DictReader(f)}
-for r in rows:
-    r["stable"] = stable.get(r["quarter"])
+rows, scenario = lib.read_inputs(book)
 no_stable = [r["quarter"] for r in rows if r["stable"] is None]
 data = {
     "generated": date.today().isoformat(),
     "version": str(book["Guide"]["B2"].value).rsplit(" ", 1)[-1],
     "latest": rows[-1]["quarter"],
-    "series": {k: {"label": d, "unit": u} for k, (_, d, u) in lib.INPUTS.items()},
+    "series": {k: {"label": d, "unit": u} for k, (_, d, u) in lib.ALL_INPUTS.items()},
     "params": lib.read_params(book),
     "quarters": rows,
     "scenario": scenario,
@@ -64,9 +55,9 @@ data = {
 
 with open(SITE / "data" / "model-inputs.csv", "w", newline="") as f:
     w = csv.writer(f)
-    w.writerow(["quarter"] + list(lib.INPUTS) + ["stablecoins", "estimated"])
+    w.writerow(["quarter"] + list(lib.ALL_INPUTS) + ["estimated"])
     for r in rows:
-        w.writerow([r["quarter"]] + [r[k] for k in lib.INPUTS] + [r["stable"], " ".join(r.get("estimated", []))])
+        w.writerow([r["quarter"]] + [r[k] for k in lib.ALL_INPUTS] + [" ".join(r.get("estimated", []))])
 
 docs = [{"slug": s, "title": t, "path": p, "md": (lib.ROOT / p).read_text()} for s, t, p in DOCS if (lib.ROOT / p).exists()]
 (SITE / "data" / "docs.js").write_text(
@@ -77,7 +68,7 @@ shutil.copy2(lib.WORKBOOK, SITE / "downloads" / lib.WORKBOOK.name)
 
 print(f"site data rebuilt: {len(rows)} quarters to {data['latest']}, {len(docs)} docs, workbook {data['version']}")
 if no_stable:
-    print(f"WARNING: no stablecoin supply for {', '.join(no_stable)}. Run scripts/fetch_stablecoins.py; "
+    print(f"WARNING: no stablecoin supply on the Flow sheet for {', '.join(no_stable)}; "
           "the liquidity-flow view needs it for every quarter.")
 missing = [p for _, _, p in DOCS if not (lib.ROOT / p).exists()]
 if missing:

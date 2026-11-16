@@ -33,7 +33,7 @@ The equations and the evidence are in [methodology](methodology.md#liquidity-flo
 
 ## Using the forecast app
 
-**The chain today.** Six tiles, one per step. The slider underneath sets the Treasury share of stablecoin reserves. That share is an assumption, because no free series reports reserve composition; it changes the Treasury figures and never the market cap.
+**The chain today.** Six tiles, one per step. The slider underneath sets the Treasury share of stablecoin reserves, starting from the value on the workbook's `Params` sheet. That share is an assumption, because no free series reports reserve composition; it changes the Treasury figures and never the market cap.
 
 **Scenario.** Three ways to project, chosen with the buttons above the chart:
 
@@ -70,6 +70,8 @@ Each mode has presets (recent trend, soft landing, risk-on, equity bear market, 
 | `site/assets/site.js` | Header, footer, formatters, the chain tiles and lens tables shared by the pages |
 | `site/assets/style.css` | Styles, light and dark |
 
+The same chain and driver model are in the workbook, on the `Flow` sheet, as live formulas. The out-of-sample comparison and the multi-quarter scenarios are in the app only.
+
 The site holds data, not results. Every number on a page is computed in the browser from the same inputs as the workbook, so the site cannot drift from the model. For the latest quarter the browser's regression matches the workbook and `scripts/check_model.py` to at least nine digits.
 
 Data is shipped as `.js` files, not fetched as JSON, so the pages also work when opened straight from disk.
@@ -80,7 +82,7 @@ Data is shipped as `.js` files, not fetched as JSON, so the pages also work when
 make update
 ```
 
-This refreshes stablecoin supply, checks the workbook and rebuilds the generated files. See the [toolset](toolset.md).
+This checks the workbook and rebuilds the generated files. See the [toolset](toolset.md).
 
 ## Limits
 
