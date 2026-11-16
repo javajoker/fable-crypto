@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.2.1 — 16 November 2026
+
+### Fixed
+
+- **`#VALUE!` across the workbook in Excel.** `Params!C28`, which finds the scenario row, used `SUMPRODUCT(MAX(...))`. LibreOffice evaluates that as an array; Excel does not, and returned 0. Every named range ends at that row, so the regression, the diagnostics, the backtest and the driver model all failed. The cell is now `=MATCH("*(scenario)*",Model!$B$1:$B$500,0)`. No value changes in LibreOffice.
+
+### Added
+
+- **`Data_Sources`**: a row for USD stablecoin supply (DefiLlama), with definition, link, grade and notes. Series labels now name their sheet, e.g. "M2 (Model C)".
+
+### Verification
+
+- Opened and fully recalculated in Excel for Mac: coefficients, diagnostics, backtest, driver model and scenario match the LibreOffice values, and all nine integrity checks read `OK`.
+- 29 of 29 checks pass.
+- Still not done: opening a workbook saved by `add_quarter.py` in Excel.
+
 ## v2.2 — 16 November 2026
 
 The liquidity-flow model is now in the workbook. The regression model and its numbers are unchanged: all 1,041 calculated values on `Model`, `Params` and `Backtest` match v2.1.

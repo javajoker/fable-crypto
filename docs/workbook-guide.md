@@ -36,7 +36,7 @@ Four blocks, all formulas:
 
 ### `Model`
 
-One row per quarter from row 9. The last row with a label containing `(scenario)` is the scenario row.
+One row per quarter from row 9. The row whose label contains `(scenario)` is the scenario row; keep that text out of every other cell in column B.
 
 | Columns | Group | Content |
 |---|---|---|
@@ -89,7 +89,7 @@ Chart ranges run through the scenario row, so a quarter inserted above it appear
 
 ### `Data_Sources`, `Audit_Log`, `Original_v1`
 
-Source and confidence grade per series; the audit of the original sheet (14 logic problems, 87 data corrections); the original sheet itself. These are records and are not read by any formula.
+Source and confidence grade per series, the stablecoin series included; the audit of the original sheet (14 logic problems, 87 data corrections); the original sheet itself. These are records and are not read by any formula.
 
 ## Named ranges
 
@@ -160,4 +160,6 @@ On `Summary`. Each returns `OK` or `CHECK`.
 
 ## Compatibility
 
-The workbook uses only functions available since Excel 2007 (`LINEST`, `TREND`, `INDEX`, `SUMPRODUCT`, `COUNTIFS`, `AVERAGEIFS`). It has no macros, no external links and no volatile functions. It calculates in LibreOffice Calc as well, which is how v2.1 was verified.
+The workbook uses only functions available since Excel 2007 (`LINEST`, `TREND`, `INDEX`, `MATCH`, `SUMPRODUCT`, `COUNTIFS`, `AVERAGEIFS`). It has no macros, no external links and no volatile functions, and no formula depends on array entry. It is checked in both Excel and LibreOffice Calc.
+
+The two do not always agree: up to v2.2 the scenario row was found with `SUMPRODUCT(MAX(...))`, which LibreOffice evaluates as an array and Excel does not, so Excel showed `#VALUE!` throughout. A new formula should be tried in Excel before it is relied on.

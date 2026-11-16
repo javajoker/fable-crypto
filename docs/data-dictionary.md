@@ -48,7 +48,7 @@ Only M2, US equity market cap and crypto market cap drive the fair value. The po
 |---|---|---|---|---|---|
 | G | Stablecoin supply | Total circulating USD-pegged stablecoins, last observation of the quarter | $T | DefiLlama — https://stablecoins.llama.fi/stablecoincharts/all | Locked USD in the liquidity-flow and driver models |
 
-Fetched on 16 November 2026 and matched against the source that day (grade A). It is a single-source series, and the source revises history as it adds coins; `make audit` shows any drift. It covers 2019 Q4 onward: $4B then, $304B in 2026 Q3. This series is not yet listed on the `Data_Sources` sheet.
+Fetched on 16 November 2026 and matched against the source that day (grade A). It is a single-source series, and the source revises history as it adds coins; `make audit` shows any drift. It covers 2019 Q4 onward: $4B then, $304B in 2026 Q3. It has its own row on the `Data_Sources` sheet.
 
 The share of stablecoin reserves held in US Treasuries is not a data series. It is an assumption on `Params` (75% by default).
 
