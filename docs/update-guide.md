@@ -57,7 +57,7 @@ Blue cells can be overwritten at any time, for example when GDP is revised. Note
 | Symptom | Likely cause |
 |---|---|
 | `Scenario row found` reads `CHECK` | The scenario label lost the text `(scenario)` |
-| `Locked USD filled in` reads `CHECK` | A row was added on `Model` but not on `Flow`, or its stablecoin cell is empty |
+| `Stablecoin base filled in` reads `CHECK` | A row was added on `Model` but not on `Flow`, or its stablecoin cell is empty |
 | `Flow` shows the wrong quarter's figures | `Flow` and `Model` no longer have the same row numbers |
 | The latest quarter on `Summary` is not the one added | The new row was inserted below the scenario row, or a second label contains `(scenario)` |
 | `No blank inputs` or `All inputs numeric` reads `CHECK` | A missing value, or a number typed as text (often a trailing space or a `$` sign) |

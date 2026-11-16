@@ -25,10 +25,10 @@ INPUTS = {
 }
 # the one input on the Flow sheet
 FLOW_INPUTS = {
-    "stable": ("G", "USD stablecoin supply, quarter-end (locked USD)", "$T"),
+    "stable": ("G", "USD stablecoin supply, quarter-end (the stablecoin base)", "$T"),
 }
 ALL_INPUTS = {**INPUTS, **FLOW_INPUTS}
-FLOW_LAST_COL = 19              # S
+FLOW_LAST_COL = 23              # W
 
 
 def cell_for(book, key, row):
@@ -167,8 +167,8 @@ def build_charts(wb, scen):
 
     flow = wb["Flow"]
     for col, label, color, title, fmt, anchor in (
-            (7, "Locked USD", "2A78D6", "Locked USD: stablecoin supply ($T)", "0.00", "B73"),
-            (12, "Crypto V", "EB6834", "Crypto V: market cap per locked dollar", "0", "B96")):
+            (7, "Stablecoin base", "2A78D6", "Stablecoin base: locked bonds + locked USD ($T)", "0.00", "B73"),
+            (12, "Crypto V", "EB6834", "Crypto V: market cap per stablecoin dollar", "0", "B96")):
         bar = BarChart()
         bar.type = "col"
         bar.gapWidth = 60

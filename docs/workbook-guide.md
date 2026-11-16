@@ -1,6 +1,6 @@
 # Workbook guide
 
-A reference for the layout of `crypto_model_v2.xlsx` (v2.2). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
+A reference for the layout of `crypto_model_v2.xlsx` (v2.3). For what the numbers mean see [methodology](methodology.md); for the quarterly routine see the [update guide](update-guide.md).
 
 ## Colour conventions
 
@@ -23,7 +23,7 @@ Instructions, how to read the output, limits, colour legend, version note.
 
 ### `Summary`
 
-Four blocks, all formulas:
+Six blocks, all formulas:
 
 | Block | Content |
 |---|---|
@@ -31,8 +31,8 @@ Four blocks, all formulas:
 | Scenario row | Fair value and band under the scenario inputs; scenario gap if a crypto value is typed in |
 | How far to trust it | n, R², SE, Durbin–Watson, Engle–Granger τ, backtest correlation and hit rate, with plain yes/no readings |
 | Integrity checks | Nine checks and an overall status (see below) |
-| Liquidity chain | Flowing USD, free USD, locked USD, Treasury collateral, crypto V and market cap for the latest quarter |
-| Driver model, scenario row | Locked USD, crypto V and market cap one quarter ahead under the scenario inputs |
+| Liquidity chain | Flowing USD, free USD, the stablecoin base, locked bonds, locked USD, crypto V and market cap for the latest quarter |
+| Driver model, scenario row | Stablecoin base, crypto V and market cap one quarter ahead under the scenario inputs |
 
 ### `Model`
 
@@ -50,17 +50,20 @@ One row per quarter from row 9. The row whose label contains `(scenario)` is the
 
 ### `Flow`
 
-The liquidity-flow chain and the driver model. Its rows match `Model` one for one: same row numbers, same scenario row. It reads `Model` by row number, so the two sheets must stay in step.
+The stablecoin base, its two legs and the driver model. Its rows match `Model` one for one: same row numbers, same scenario row. It reads `Model` by row number, so the two sheets must stay in step.
 
 | Columns | Group | Content |
 |---|---|---|
 | B–F | Linked from Model | Quarter, M2, GDP, crypto market cap, US equity cap |
-| G | Input | Stablecoin supply (locked USD). In the scenario row it defaults to last quarter's lock-in share × the scenario's M2 |
-| H–K | The chain | Free USD, lock-in share, share of free USD, Treasury collateral |
+| G | Input | Stablecoin supply (the base). In the scenario row it defaults to the bond leg growing with the scenario's public debt plus the cash leg growing with its M2; type over it to add growth in use |
+| H–K | The chain | Free USD, base ÷ M2, base ÷ free USD, locked bonds (base × backing share) |
 | L–P | Crypto V | V, ln V, its change, the change in ln equity cap, the pull toward V's running average |
-| Q–S | Driver model | V and market cap one quarter ahead given that quarter's equity move and locked USD, and the miss against the actual |
+| Q–S | Driver model | V and market cap one quarter ahead given that quarter's equity move and base, and the miss against the actual |
+| T–W | Two legs | Public debt (from `Model`), locked USD (base × (1 − backing share)), locked bonds ÷ public debt, locked USD ÷ M2 |
 
 Columns Q–S use coefficients fitted on the whole sample, so for past quarters they show fit, not forecasts. The out-of-sample test is in the web app.
+
+With the backing share on `Params` at 100%, locked USD is zero in every row and the sheet calculates as before: market cap is V × locked bonds.
 
 ### `Params`
 
@@ -70,7 +73,7 @@ Columns Q–S use coefficients fitted on the whole sample, so for past quarters 
 | 14–16 | Regression coefficients, standard errors, t-stats |
 | 18–24 | R², SE, observations, Durbin–Watson, Engle–Granger τ, return beta and its t-stat |
 | 27–31 | Range control: first data row, scenario row, last actual row, latest quarter, first real-time quarter. Formulas; do not edit |
-| 34–35 | Editable (yellow): share of stablecoin reserves held in Treasuries (an assumption), lookback for the usual range of V |
+| 34–35 | Editable (yellow): share of stablecoin reserves held in short-term Treasuries (an assumption; it splits the base into locked bonds and locked USD), lookback for the usual range of V |
 | 36–42 | Driver model: β (equities), κ (pull to average), average V, median and quartiles of V over the lookback, observations |
 
 ### `Backtest`
@@ -82,7 +85,7 @@ Counts, average next-quarter return and share of gains by signal; correlation, t
 1. Actual crypto market cap vs fair value with the ±1 SE band
 2. Real-time Z-score
 3. Valuation gap, full sample
-4. Locked USD
+4. Stablecoin base
 5. Crypto V
 
 Chart ranges run through the scenario row, so a quarter inserted above it appears without editing the charts. The scenario row shows as the last point of the fair-value lines.
@@ -110,7 +113,7 @@ And on `Flow`:
 
 | Name | Column on `Flow` | Used for |
 |---|---|---|
-| `Flow_Locked` | G | Stablecoin supply (the "locked USD filled in" check) |
+| `Flow_Locked` | G | Stablecoin supply (the "Stablecoin base filled in" check) |
 | `Flow_V`, `Flow_lnV` | L, M | Crypto V and its log |
 | `Flow_dV` | N | Change in ln V, from the third quarter on (dependent variable of the V equation) |
 | `Flow_X` | O:P | Its two regressors |
@@ -156,7 +159,7 @@ On `Summary`. Each returns `OK` or `CHECK`.
 | Residuals sum to zero | The fair-value columns and the regression are on different samples |
 | Minimum window is usable | The window is below 4 or leaves almost nothing to test on |
 | No formula errors on Model | Any calculated cell on `Model` shows an error |
-| Locked USD filled in | `Flow` lacks a stablecoin value for an actual quarter |
+| Stablecoin base filled in | `Flow` lacks a stablecoin value for an actual quarter |
 
 ## Compatibility
 

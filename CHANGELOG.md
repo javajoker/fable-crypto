@@ -1,5 +1,31 @@
 # Changelog
 
+## v2.3 — 16 November 2026
+
+The liquidity-flow model is rebuilt on a different footing. Stablecoins are treated as crypto's general equivalent, with their peg held by short-term US Treasuries, so the base of the market is locked bonds first and locked USD second. The model no longer depends on a share of M2. The regression model and its numbers are unchanged.
+
+### Changed
+
+- **Terms.** Stablecoin supply is now the *stablecoin base*. *Locked bonds* = base × backing share. *Locked USD* now means only the cash part of the reserves, base × (1 − backing share); before, it meant the whole base.
+- **`Flow` sheet**: four new columns, T–W: public debt, locked USD, locked bonds ÷ public debt, locked USD ÷ M2. Column K is relabelled locked bonds.
+- **Scenario base.** The default was last quarter's lock-in share × scenario M2. It is now the bond leg growing with scenario public debt plus the cash leg growing with scenario M2. With the scenario inputs carried forward the result is the same, $3.01T.
+- **Web app.** The driver model takes public debt growth (the Treasury) beside M2 and equities, and "growth in the use of stablecoins" replaces the drift in the lock-in share. The manual mode sets base growth directly; M2 plays no part in it. The chain has seven tiles, and the backing slider now also sets how the base responds to debt and to M2.
+- **Out-of-sample comparison.** The driver model's base follows the two legs. Told the paths, it is now 4% more accurate than "no change" (was 3%); not told, still no better.
+- `Summary`, `Params`, `Guide` and the two `Flow` charts are relabelled. The ninth integrity check is now "Stablecoin base filled in".
+- `check_model.py`: 32 checks, adding the two legs and the scenario base.
+
+### Findings worth knowing
+
+- With the backing share at 100%, locked USD is zero and every result is computed the same way on locked bonds alone. Checked in Excel.
+- The two legs explain little of the base's growth: a typical quarterly miss of 7.9%, against 8.0% following M2 alone and 8.7% assuming no change. Most of the growth is growth in use, which the model takes as a setting and does not forecast.
+
+### Verification
+
+- Fully recalculated in Excel for Mac and in LibreOffice: no errors, all nine integrity checks `OK`, 32 of 32 checks pass.
+- `add_quarter.py` run on a copy with the new columns: 32 of 32.
+- Web app checked in the browser in all three modes, at 75% and 100% backing.
+- Not done: Treasury bills outstanding and a tokenised-RWA series are not in the data; total public debt stands in for the first, and the second is described, not measured.
+
 ## v2.2.1 — 16 November 2026
 
 ### Fixed

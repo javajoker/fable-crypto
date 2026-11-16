@@ -24,7 +24,7 @@ This writes `data/quarters/2026Q4.json`. Seven of the eleven inputs come from pu
 |---|---|
 | `m2`, `gdp`, `cpi`, `rate`, `rrp` | FRED: `M2SL`, `GDP`, `CPIAUCNS`, `DFEDTARU`, `RRPONTSYD` |
 | `debt` | US Treasury, Debt to the Penny |
-| `stable` | DefiLlama, USD stablecoin supply (locked USD on the `Flow` sheet) |
+| `stable` | DefiLlama, USD stablecoin supply (the stablecoin base on the `Flow` sheet) |
 | `gold_t` | Estimated: previous quarter + 906 tonnes |
 | `equity` | **By hand**: Siblis Research |
 | `crypto` | **By hand**: CoinGecko quarterly report. The script prints today's live value as a guide |
@@ -64,7 +64,7 @@ python3 scripts/add_quarter.py --quarter "2026 Q3" --crypto 2.97
 
 ### `check_model.py`
 
-Reads the blue input cells, recomputes the regression, the real-time signal, the backtest and the driver-model equation in plain Python, and compares 29 results with the workbook's own. Exit code 0 means all match.
+Reads the blue input cells, recomputes the regression, the real-time signal, the backtest and the driver-model equation in plain Python, and compares 32 results with the workbook's own. Exit code 0 means all match.
 
 A workbook saved by `add_quarter.py` holds formulas without calculated values, because `openpyxl` does not calculate. In that case the check lets LibreOffice calculate a temporary copy and checks that. Without LibreOffice, open the workbook in Excel, save it, and run the check again.
 

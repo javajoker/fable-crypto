@@ -166,6 +166,13 @@ if "Flow" in wb.sheetnames:
     check("median crypto V, lookback", mid, P["C39"].value)
     v_next = math.exp(lv[-1] + beta_v * math.log(M[f"I{scen}"].value / eq[-1]) + kappa * (sum(lv) / n - lv[-1]))
     check("scenario: crypto V, driver model", v_next, F[f"Q{scen}"].value)
+    # the base stands on two legs: locked bonds (follow public debt) and locked USD (follows M2)
+    bk, debt = P["C34"].value, [M[f"H{r}"].value for r in rows]
+    check("locked bonds + locked USD = stablecoin base", st[-1], F[f"K{last}"].value + F[f"U{last}"].value)
+    check("locked bonds, share of public debt", bk * st[-1] / debt[-1], F[f"V{last}"].value)
+    if isinstance(openpyxl.load_workbook(PATH)["Flow"][f"G{scen}"].value, str):       # only while the default has not been typed over
+        base_next = st[-1] * (bk * M[f"H{scen}"].value / debt[-1] + (1 - bk) * M[f"C{scen}"].value / m2[-1])
+        check("scenario: stablecoin base, two legs", base_next, F[f"G{scen}"].value)
 
 # ---- the workbook's own integrity checks
 if "Summary" in wb.sheetnames:
